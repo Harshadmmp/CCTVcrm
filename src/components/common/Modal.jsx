@@ -10,6 +10,7 @@ export const Modal = ({
   footer,
   maxWidth = 'max-w-2xl',
   preventBackdropClose = false,
+  zIndex = 'z-50',
 }) => {
   const modalRef = useRef(null);
 
@@ -33,7 +34,7 @@ export const Modal = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/60 backdrop-blur-sm animate-fadeIn"
+      className={`fixed inset-0 ${zIndex} flex items-center justify-center p-4 sm:p-6 overflow-y-auto bg-slate-950/60 backdrop-blur-sm animate-fadeIn`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-title"

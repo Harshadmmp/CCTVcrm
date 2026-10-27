@@ -48,6 +48,7 @@ export const QuotationPreviewModal = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      zIndex="z-[70]"
       title={`Quotation Preview • ${quotation.id || 'Draft'}`}
       subtitle={`Customer: ${quotation.customerName} • Status: ${quotation.status || 'Draft'}`}
       maxWidth="max-w-4xl"

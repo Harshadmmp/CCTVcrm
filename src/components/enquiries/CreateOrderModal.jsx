@@ -18,6 +18,7 @@ export const CreateOrderModal = ({ isOpen, onClose, quotation }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      zIndex="z-[60]"
       title="Create Order from Approved Quotation"
       subtitle={`Source Quotation: ${quotation.id} • Customer: ${quotation.customerName}`}
       maxWidth="max-w-xl"

@@ -213,6 +213,7 @@ export const QuotationModal = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      zIndex="z-[60]"
       title={quotationToEdit ? `Edit Quotation ${quotationToEdit.id}` : 'Create Formal Quotation'}
       subtitle={`Enquiry ${enquiry.id} • ${enquiry.customerName}`}
       maxWidth="max-w-4xl"

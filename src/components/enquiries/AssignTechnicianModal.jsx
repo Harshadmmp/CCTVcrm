@@ -48,6 +48,7 @@ export const AssignTechnicianModal = ({ isOpen, onClose, order, enquiry }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      zIndex="z-[60]"
       title="Assign Technician to Work Order"
       subtitle={`Order ${order.id} • Customer: ${order.customerName}`}
       maxWidth="max-w-xl"

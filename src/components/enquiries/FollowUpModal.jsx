@@ -39,6 +39,7 @@ export const FollowUpModal = ({ isOpen, onClose, enquiry }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      zIndex="z-[60]"
       title="Log Customer Follow-up"
       subtitle={`Enquiry ${enquiry.id} • ${enquiry.customerName}`}
       maxWidth="max-w-xl"

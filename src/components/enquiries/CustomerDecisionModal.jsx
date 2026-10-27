@@ -60,6 +60,7 @@ export const CustomerDecisionModal = ({ isOpen, onClose, quotation }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      zIndex="z-[60]"
       title="Record Customer Decision"
       subtitle={`Quotation ${quotation.id} • ${quotation.customerName} (${formatINR(quotation.grandTotal)})`}
       maxWidth="max-w-xl"

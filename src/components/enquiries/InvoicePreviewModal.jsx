@@ -37,6 +37,7 @@ export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      zIndex="z-[70]"
       title={`Tax Invoice • ${liveInvoice.id}`}
       subtitle={`Customer: ${liveInvoice.customerName} • Status: ${liveInvoice.status}`}
       maxWidth="max-w-4xl"

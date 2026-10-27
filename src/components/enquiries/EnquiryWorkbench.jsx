@@ -175,123 +175,7 @@ export const EnquiryWorkbench = () => {
       </div>
 
       {/* --- Routine Centered Modals --- */}
-      {/* 1. Add Enquiry Modal */}
-      <AddEnquiryModal
-        isOpen={isAddEnquiryOpen}
-        onClose={() => setIsAddEnquiryOpen(false)}
-      />
-
-      {/* 2. Site Visit Modal */}
-      {siteVisitEnquiry && (
-        <SiteVisitModal
-          isOpen={Boolean(siteVisitEnquiry)}
-          onClose={() => setSiteVisitEnquiry(null)}
-          enquiry={siteVisitEnquiry}
-        />
-      )}
-
-      {/* 3. Quotation Modal */}
-      {quotationEnquiry && (
-        <QuotationModal
-          isOpen={Boolean(quotationEnquiry)}
-          onClose={() => {
-            setQuotationEnquiry(null);
-            setQuotationToEdit(null);
-          }}
-          enquiry={quotationEnquiry}
-          quotationToEdit={quotationToEdit}
-          onOpenPreview={(q) => {
-            setPreviewQuotation(q);
-          }}
-        />
-      )}
-
-      {/* 4. Quotation Preview Modal */}
-      {previewQuotation && (
-        <QuotationPreviewModal
-          isOpen={Boolean(previewQuotation)}
-          onClose={() => setPreviewQuotation(null)}
-          quotation={previewQuotation}
-          onBackToEdit={() => {
-            const enq = enquiries.find((e) => e.id === previewQuotation.enquiryId);
-            setQuotationEnquiry(enq);
-            setQuotationToEdit(previewQuotation);
-            setPreviewQuotation(null);
-          }}
-          onOpenCustomerDecision={(q) => {
-            setDecisionQuotation(q);
-            setPreviewQuotation(null);
-          }}
-        />
-      )}
-
-      {/* 5. Customer Decision Modal */}
-      {decisionQuotation && (
-        <CustomerDecisionModal
-          isOpen={Boolean(decisionQuotation)}
-          onClose={() => setDecisionQuotation(null)}
-          quotation={decisionQuotation}
-        />
-      )}
-
-      {/* 6. Create Order Modal */}
-      {orderQuotation && (
-        <CreateOrderModal
-          isOpen={Boolean(orderQuotation)}
-          onClose={() => setOrderQuotation(null)}
-          quotation={orderQuotation}
-        />
-      )}
-
-      {/* 7. Assign Technician Modal */}
-      {technicianOrder && (
-        <AssignTechnicianModal
-          isOpen={Boolean(technicianOrder)}
-          onClose={() => setTechnicianOrder(null)}
-          order={technicianOrder}
-        />
-      )}
-
-      {/* 8. Work Status Modal */}
-      {workStatusOrder && (
-        <WorkStatusModal
-          isOpen={Boolean(workStatusOrder)}
-          onClose={() => setWorkStatusOrder(null)}
-          order={workStatusOrder}
-        />
-      )}
-
-      {/* 9. Follow-up Modal */}
-      {followUpEnquiry && (
-        <FollowUpModal
-          isOpen={Boolean(followUpEnquiry)}
-          onClose={() => setFollowUpEnquiry(null)}
-          enquiry={followUpEnquiry}
-        />
-      )}
-
-      {/* 10. Invoice Modal */}
-      {invoiceOrder && (
-        <InvoiceModal
-          isOpen={Boolean(invoiceOrder)}
-          onClose={() => setInvoiceOrder(null)}
-          order={invoiceOrder}
-          onOpenPreview={(draftInv) => {
-            setPreviewInvoice(draftInv);
-          }}
-        />
-      )}
-
-      {/* 11. Invoice Preview Modal */}
-      {previewInvoice && (
-        <InvoicePreviewModal
-          isOpen={Boolean(previewInvoice)}
-          onClose={() => setPreviewInvoice(null)}
-          invoice={previewInvoice}
-        />
-      )}
-
-      {/* 12. Full Dossier Details Modal */}
+      {/* 1. Base Dossier Details Modal (Rendered first so child action forms sit in front) */}
       {detailsEnquiryId && (
         <EnquiryDetailsModal
           isOpen={Boolean(detailsEnquiryId)}
@@ -311,6 +195,122 @@ export const EnquiryWorkbench = () => {
           onOpenFollowUp={(enq) => setFollowUpEnquiry(enq)}
           onOpenCreateInvoice={(ord) => setInvoiceOrder(ord)}
           onOpenPreviewInvoice={(inv) => setPreviewInvoice(inv)}
+        />
+      )}
+
+      {/* 2. Add Enquiry Modal */}
+      <AddEnquiryModal
+        isOpen={isAddEnquiryOpen}
+        onClose={() => setIsAddEnquiryOpen(false)}
+      />
+
+      {/* 3. Site Visit Modal */}
+      {siteVisitEnquiry && (
+        <SiteVisitModal
+          isOpen={Boolean(siteVisitEnquiry)}
+          onClose={() => setSiteVisitEnquiry(null)}
+          enquiry={siteVisitEnquiry}
+        />
+      )}
+
+      {/* 4. Quotation Modal */}
+      {quotationEnquiry && (
+        <QuotationModal
+          isOpen={Boolean(quotationEnquiry)}
+          onClose={() => {
+            setQuotationEnquiry(null);
+            setQuotationToEdit(null);
+          }}
+          enquiry={quotationEnquiry}
+          quotationToEdit={quotationToEdit}
+          onOpenPreview={(q) => {
+            setPreviewQuotation(q);
+          }}
+        />
+      )}
+
+      {/* 5. Quotation Preview Modal */}
+      {previewQuotation && (
+        <QuotationPreviewModal
+          isOpen={Boolean(previewQuotation)}
+          onClose={() => setPreviewQuotation(null)}
+          quotation={previewQuotation}
+          onBackToEdit={() => {
+            const enq = enquiries.find((e) => e.id === previewQuotation.enquiryId);
+            setQuotationEnquiry(enq);
+            setQuotationToEdit(previewQuotation);
+            setPreviewQuotation(null);
+          }}
+          onOpenCustomerDecision={(q) => {
+            setDecisionQuotation(q);
+            setPreviewQuotation(null);
+          }}
+        />
+      )}
+
+      {/* 6. Customer Decision Modal */}
+      {decisionQuotation && (
+        <CustomerDecisionModal
+          isOpen={Boolean(decisionQuotation)}
+          onClose={() => setDecisionQuotation(null)}
+          quotation={decisionQuotation}
+        />
+      )}
+
+      {/* 7. Create Order Modal */}
+      {orderQuotation && (
+        <CreateOrderModal
+          isOpen={Boolean(orderQuotation)}
+          onClose={() => setOrderQuotation(null)}
+          quotation={orderQuotation}
+        />
+      )}
+
+      {/* 8. Assign Technician Modal */}
+      {technicianOrder && (
+        <AssignTechnicianModal
+          isOpen={Boolean(technicianOrder)}
+          onClose={() => setTechnicianOrder(null)}
+          order={technicianOrder}
+        />
+      )}
+
+      {/* 9. Work Status Modal */}
+      {workStatusOrder && (
+        <WorkStatusModal
+          isOpen={Boolean(workStatusOrder)}
+          onClose={() => setWorkStatusOrder(null)}
+          order={workStatusOrder}
+        />
+      )}
+
+      {/* 10. Follow-up Modal */}
+      {followUpEnquiry && (
+        <FollowUpModal
+          isOpen={Boolean(followUpEnquiry)}
+          onClose={() => setFollowUpEnquiry(null)}
+          enquiry={followUpEnquiry}
+        />
+      )}
+
+      {/* 11. Invoice Modal */}
+      {invoiceOrder && (
+        <InvoiceModal
+          isOpen={Boolean(invoiceOrder)}
+          onClose={() => setInvoiceOrder(null)}
+          order={invoiceOrder}
+          onOpenPreview={(draftInv) => {
+            setPreviewInvoice(draftInv);
+          }}
+        />
+      )}
+
+      {/* 12. Invoice Preview Modal */}
+      {previewInvoice && (
+        <InvoicePreviewModal
+          isOpen={Boolean(previewInvoice)}
+          onClose={() => setPreviewInvoice(null)}
+          invoice={previewInvoice}
         />
       )}
     </div>

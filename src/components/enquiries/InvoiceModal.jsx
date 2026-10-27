@@ -71,6 +71,7 @@ export const InvoiceModal = ({ isOpen, onClose, order, onOpenPreview }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      zIndex="z-[60]"
       title="Create Tax Invoice"
       subtitle={`Completed Job • Order ${order.id} • ${order.customerName}`}
       maxWidth="max-w-3xl"
