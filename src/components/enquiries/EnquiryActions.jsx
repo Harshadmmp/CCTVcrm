@@ -13,6 +13,8 @@ import {
   Edit,
   Send,
   AlertCircle,
+  RefreshCw,
+  XCircle,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -30,7 +32,7 @@ export const EnquiryActions = ({
   onOpenCreateInvoice,
   onOpenPreviewInvoice,
 }) => {
-  const { quotations, orders, invoices } = useApp();
+  const { quotations, orders, invoices, recordCustomerDecision } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -116,11 +118,19 @@ export const EnquiryActions = ({
         return (
           <button
             type="button"
-            onClick={() => onOpenDecision(quotation)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap"
+            onClick={() => {
+              if (quotation) {
+                if (quotation.status !== 'Approved') {
+                  recordCustomerDecision(quotation.id, 'Approved', 'Approved by customer (On-call / In-person)');
+                }
+                onOpenCreateOrder({ ...quotation, status: 'Approved' });
+              }
+            }}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
+            title="Customer approved quotation on call or in-person. Generate Work Order directly."
           >
-            <FileCheck2 className="w-3.5 h-3.5" />
-            Record Decision
+            <PackageCheck className="w-3.5 h-3.5" />
+            Approve & Order
           </button>
         );
 
@@ -288,7 +298,7 @@ export const EnquiryActions = ({
                     setMenuOpen(false);
                     onOpenPreviewQuotation(quotation);
                   }}
-                  className="w-full px-3.5 py-2 text-left flex items-center gap-2 hover:bg-slate-50 text-slate-700"
+                  className="w-full px-3.5 py-2 text-left flex items-center gap-2 hover:bg-slate-50 text-slate-700 cursor-pointer"
                 >
                   <FileText className="w-4 h-4 text-blue-500" />
                   <span>Preview Quotation</span>
@@ -297,12 +307,23 @@ export const EnquiryActions = ({
                   type="button"
                   onClick={() => {
                     setMenuOpen(false);
-                    onOpenDecision(quotation);
+                    onOpenQuotation(enquiry, quotation);
                   }}
-                  className="w-full px-3.5 py-2 text-left flex items-center gap-2 hover:bg-slate-50 text-slate-700"
+                  className="w-full px-3.5 py-2 text-left flex items-center gap-2 hover:bg-slate-50 text-amber-700 cursor-pointer"
                 >
-                  <FileCheck2 className="w-4 h-4 text-emerald-500" />
-                  <span>Record Customer Decision</span>
+                  <RefreshCw className="w-4 h-4 text-amber-500" />
+                  <span>Revise / Edit Quote</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onOpenDecision(quotation, 'Declined');
+                  }}
+                  className="w-full px-3.5 py-2 text-left flex items-center gap-2 hover:bg-rose-50 text-rose-600 cursor-pointer"
+                >
+                  <XCircle className="w-4 h-4 text-rose-500" />
+                  <span>Customer Declined</span>
                 </button>
               </>
             ) : (

@@ -7,6 +7,8 @@ import {
   FileCheck2,
   Clock,
   ShieldCheck,
+  PackageCheck,
+  Edit,
 } from 'lucide-react';
 import Modal from '../common/Modal';
 import { formatINR, formatDate } from '../../utils/formatters';
@@ -18,8 +20,9 @@ export const QuotationPreviewModal = ({
   quotation,
   onBackToEdit,
   onOpenCustomerDecision,
+  onOpenCreateOrder,
 }) => {
-  const { addToast } = useApp();
+  const { addToast, recordCustomerDecision } = useApp();
   const [showWhatsAppNotice, setShowWhatsAppNotice] = useState(false);
 
   if (!quotation) return null;
@@ -78,18 +81,33 @@ export const QuotationPreviewModal = ({
             <button
               type="button"
               onClick={handleWhatsAppShare}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer"
             >
               <Share2 className="w-3.5 h-3.5" />
               Send via WhatsApp
             </button>
-            {onOpenCustomerDecision && (
+            {quotation.status !== 'Approved' && !quotation.isOrderCreated ? (
+              <button
+                type="button"
+                onClick={() => {
+                  recordCustomerDecision(quotation.id, 'Approved', 'Approved by customer (On-call / In-person)');
+                  if (onOpenCreateOrder) {
+                    onOpenCreateOrder({ ...quotation, status: 'Approved' });
+                    onClose();
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors cursor-pointer"
+              >
+                <PackageCheck className="w-3.5 h-3.5" />
+                Approve & Create Order
+              </button>
+            ) : onOpenCustomerDecision && (
               <button
                 type="button"
                 onClick={() => {
                   onOpenCustomerDecision(quotation);
                 }}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer"
               >
                 <FileCheck2 className="w-3.5 h-3.5" />
                 Record Customer Decision
@@ -100,12 +118,23 @@ export const QuotationPreviewModal = ({
       }
     >
       <div className="space-y-4">
-        {/* Compliance Warning Notice banner */}
-        <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-3 text-xs text-amber-800 flex items-start gap-2.5">
-          <Clock className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <span className="font-semibold">Business Workflow Rule:</span> Viewing or sending this quotation does not count as customer approval. An explicit customer decision must be recorded using the "Record Customer Decision" button.
+        {/* Workflow Guidance Notice banner */}
+        <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-3 text-xs text-blue-900 flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-blue-600 flex-shrink-0" />
+            <span>
+              <span className="font-semibold">Quick Action:</span> If customer approved on call or in-person, click <strong>"Approve & Create Order"</strong> to proceed immediately.
+            </span>
           </div>
+          {onOpenCustomerDecision && quotation.status !== 'Approved' && (
+            <button
+              type="button"
+              onClick={() => onOpenCustomerDecision(quotation, 'Declined')}
+              className="text-xs text-rose-600 hover:text-rose-800 font-semibold hover:underline whitespace-nowrap cursor-pointer"
+            >
+              Customer Declined?
+            </button>
+          )}
         </div>
 
         {/* Printable Quotation Sheet */}

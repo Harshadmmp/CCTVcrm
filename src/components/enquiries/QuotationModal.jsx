@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, AlertCircle, Eye, Send } from 'lucide-react';
+import { Plus, Trash2, AlertCircle, Eye, Send, CheckCircle2 } from 'lucide-react';
 import Modal from '../common/Modal';
 import { useApp } from '../../context/AppContext';
 import { formatINR } from '../../utils/formatters';
@@ -241,7 +241,7 @@ export const QuotationModal = ({
       isOpen={isOpen}
       onClose={onClose}
       zIndex="z-[60]"
-      title={quotationToEdit ? `Edit Quotation ${quotationToEdit.id}` : 'Create Formal Quotation'}
+      title={quotationToEdit ? `Edit Quotation ${quotationToEdit.id}` : 'Create Quotation'}
       subtitle={`Enquiry ${enquiry.id} • ${enquiry.customerName}`}
       maxWidth="max-w-4xl"
       footer={
@@ -306,22 +306,19 @@ export const QuotationModal = ({
       }
     >
       <div className="space-y-4">
-        {/* Customer & Address Details */}
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-          <div>
-            <span className="text-slate-500 font-medium">Customer:</span>
-            <p className="font-semibold text-slate-800 text-sm">{enquiry.customerName}</p>
-            <p className="text-slate-600">{enquiry.phone}</p>
+        {/* Compact Customer & Site Summary Strip */}
+        <div className="bg-slate-50 px-3.5 py-2.5 rounded-lg border border-slate-200 flex flex-wrap items-center justify-between text-xs text-slate-600 gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-bold text-slate-900 text-sm">{enquiry.customerName}</span>
+            <span className="text-slate-500 font-medium">{enquiry.phone}</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-600 truncate max-w-sm">📍 {enquiry.siteAddress}</span>
           </div>
-          <div>
-            <span className="text-slate-500 font-medium">Installation Location:</span>
-            <p className="text-slate-700 mt-0.5">{enquiry.siteAddress}</p>
-          </div>
-          <div>
-            <span className="text-slate-500 font-medium">Requirement & Scope:</span>
-            <p className="text-slate-700 mt-0.5 font-medium">{enquiry.requirement} ({enquiry.cameraCount || 'N/A'} Cameras)</p>
-            <p className="text-[11px] text-slate-500 truncate">{enquiry.productsOfInterest}</p>
-          </div>
+          {enquiry.cameraCount && (
+            <span className="font-semibold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded text-[11px]">
+              {enquiry.cameraCount} Cameras
+            </span>
+          )}
         </div>
 
         {/* Quotation Dates */}
@@ -360,7 +357,7 @@ export const QuotationModal = ({
             <button
               type="button"
               onClick={handleAddItem}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors"
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-md transition-colors cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Item
@@ -372,33 +369,38 @@ export const QuotationModal = ({
           )}
 
           <div className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-2xs">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs table-fixed">
+              <colgroup>
+                <col className="w-auto" />
+                <col className="w-20" />
+                <col className="w-32" />
+                <col className="w-32" />
+                <col className="w-12" />
+              </colgroup>
               <thead className="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
                 <tr>
-                  <th className="py-2.5 px-3">Item / Service</th>
-                  <th className="py-2.5 px-2 w-28">HSN / SAC</th>
-                  <th className="py-2.5 px-2 w-20 text-center">GST %</th>
-                  <th className="py-2.5 px-2 w-16 text-center">Qty</th>
-                  <th className="py-2.5 px-2 w-24">Unit Price (₹)</th>
-                  <th className="py-2.5 px-3 w-28 text-right">Line Total</th>
-                  <th className="py-2.5 px-2 w-8 text-center"></th>
+                  <th className="py-2.5 px-3">Item / Service Description</th>
+                  <th className="py-2.5 px-2 text-center">Qty</th>
+                  <th className="py-2.5 px-2 text-right">Unit Price (₹)</th>
+                  <th className="py-2.5 px-3 text-right">Line Total</th>
+                  <th className="py-2.5 px-1 text-center"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="py-6 text-center text-slate-400">
+                    <td colSpan="5" className="py-6 text-center text-slate-400">
                       No items added yet. Click "+ Add Item" above.
                     </td>
                   </tr>
                 ) : (
                   items.map((item, index) => (
                     <tr key={item.id} className="hover:bg-slate-50/50">
-                      <td className="p-2.5">
+                      <td className="p-2.5 align-top">
                         <select
                           value={item.productId}
                           onChange={(e) => handleItemProductChange(index, e.target.value)}
-                          className="w-full px-2 py-1.5 text-xs rounded border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
                         >
                           {products
                             .filter((p) => p.status === 'Active')
@@ -408,29 +410,11 @@ export const QuotationModal = ({
                               </option>
                             ))}
                         </select>
+                        <span className="text-[10px] text-slate-400 font-mono mt-1 block pl-0.5">
+                          HSN: {item.hsnSac || '85258900'} • GST: {item.gstRate ?? 18}%
+                        </span>
                       </td>
-                      <td className="p-2">
-                        <input
-                          type="text"
-                          value={item.hsnSac || ''}
-                          onChange={(e) => handleItemHsnChange(index, e.target.value)}
-                          placeholder="85258900"
-                          className="w-full px-2 py-1.5 text-xs font-mono uppercase rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="any"
-                          value={item.gstRate ?? 18}
-                          onChange={(e) => handleItemGstRateChange(index, e.target.value)}
-                          placeholder="18"
-                          className="w-full px-1.5 py-1.5 text-xs text-center font-medium rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      </td>
-                      <td className="p-2">
+                      <td className="p-2 align-top text-center">
                         <input
                           type="number"
                           min="1"
@@ -439,27 +423,31 @@ export const QuotationModal = ({
                           className="w-full px-1.5 py-1.5 text-xs rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center font-medium"
                         />
                       </td>
-                      <td className="p-2">
+                      <td className="p-2 align-top text-right">
                         <input
                           type="number"
                           min="0"
                           value={item.unitPrice}
                           onChange={(e) => handleItemPriceChange(index, e.target.value)}
-                          className="w-full px-2 py-1.5 text-xs rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 font-medium"
+                          className="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 text-right font-medium"
                         />
                       </td>
-                      <td className="p-2.5 text-right font-semibold text-slate-800">
-                        {formatINR(item.lineTotal)}
+                      <td className="p-2.5 align-top text-right">
+                        <div className="py-1.5 font-semibold text-slate-800 text-xs">
+                          {formatINR(item.lineTotal)}
+                        </div>
                       </td>
-                      <td className="p-2 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(index)}
-                          className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer"
-                          aria-label="Remove item"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      <td className="p-2 align-top text-center">
+                        <div className="pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(index)}
+                            className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer"
+                            aria-label="Remove item"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

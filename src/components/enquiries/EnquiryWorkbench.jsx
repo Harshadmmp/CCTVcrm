@@ -30,6 +30,7 @@ export const EnquiryWorkbench = () => {
   const [quotationToEdit, setQuotationToEdit] = useState(null);
   const [previewQuotation, setPreviewQuotation] = useState(null);
   const [decisionQuotation, setDecisionQuotation] = useState(null);
+  const [decisionInitial, setDecisionInitial] = useState('Approved');
   const [orderQuotation, setOrderQuotation] = useState(null);
   const [technicianOrder, setTechnicianOrder] = useState(null);
   const [workStatusOrder, setWorkStatusOrder] = useState(null);
@@ -158,13 +159,16 @@ export const EnquiryWorkbench = () => {
           enquiries={filteredEnquiries}
           onOpenDetails={(enq) => setDetailsEnquiryId(enq.id)}
           onOpenSiteVisit={(enq) => setSiteVisitEnquiry(enq)}
-          onOpenQuotation={(enq) => {
-            const existingQ = quotations.find((q) => q.id === enq.quotationId);
+          onOpenQuotation={(enq, qToEdit = null) => {
+            const existingQ = qToEdit || quotations.find((q) => q.id === enq.quotationId);
             setQuotationToEdit(existingQ || null);
             setQuotationEnquiry(enq);
           }}
           onOpenPreviewQuotation={(q) => setPreviewQuotation(q)}
-          onOpenDecision={(q) => setDecisionQuotation(q)}
+          onOpenDecision={(q, initial = 'Approved') => {
+            setDecisionQuotation(q);
+            setDecisionInitial(initial);
+          }}
           onOpenCreateOrder={(q) => setOrderQuotation(q)}
           onOpenAssignTechnician={(ord) => setTechnicianOrder(ord)}
           onOpenWorkStatus={(ord) => setWorkStatusOrder(ord)}
@@ -182,13 +186,16 @@ export const EnquiryWorkbench = () => {
           onClose={() => setDetailsEnquiryId(null)}
           enquiryId={detailsEnquiryId}
           onOpenSiteVisit={(enq) => setSiteVisitEnquiry(enq)}
-          onOpenQuotation={(enq) => {
-            const existingQ = quotations.find((q) => q.id === enq.quotationId);
+          onOpenQuotation={(enq, qToEdit = null) => {
+            const existingQ = qToEdit || quotations.find((q) => q.id === enq.quotationId);
             setQuotationToEdit(existingQ || null);
             setQuotationEnquiry(enq);
           }}
           onOpenPreviewQuotation={(q) => setPreviewQuotation(q)}
-          onOpenDecision={(q) => setDecisionQuotation(q)}
+          onOpenDecision={(q, initial = 'Approved') => {
+            setDecisionQuotation(q);
+            setDecisionInitial(initial);
+          }}
           onOpenCreateOrder={(q) => setOrderQuotation(q)}
           onOpenAssignTechnician={(ord) => setTechnicianOrder(ord)}
           onOpenWorkStatus={(ord) => setWorkStatusOrder(ord)}
@@ -241,8 +248,13 @@ export const EnquiryWorkbench = () => {
             setQuotationToEdit(previewQuotation);
             setPreviewQuotation(null);
           }}
-          onOpenCustomerDecision={(q) => {
+          onOpenCustomerDecision={(q, initial = 'Approved') => {
             setDecisionQuotation(q);
+            setDecisionInitial(initial);
+            setPreviewQuotation(null);
+          }}
+          onOpenCreateOrder={(q) => {
+            setOrderQuotation(q);
             setPreviewQuotation(null);
           }}
         />
@@ -254,6 +266,7 @@ export const EnquiryWorkbench = () => {
           isOpen={Boolean(decisionQuotation)}
           onClose={() => setDecisionQuotation(null)}
           quotation={decisionQuotation}
+          initialDecision={decisionInitial}
         />
       )}
 

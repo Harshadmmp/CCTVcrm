@@ -4,7 +4,7 @@ import Modal from '../common/Modal';
 import { useApp } from '../../context/AppContext';
 import { formatINR } from '../../utils/formatters';
 
-export const CustomerDecisionModal = ({ isOpen, onClose, quotation }) => {
+export const CustomerDecisionModal = ({ isOpen, onClose, quotation, initialDecision = 'Approved' }) => {
   const { recordCustomerDecision } = useApp();
 
   const [decision, setDecision] = useState('Approved');
@@ -12,10 +12,10 @@ export const CustomerDecisionModal = ({ isOpen, onClose, quotation }) => {
 
   useEffect(() => {
     if (quotation) {
-      setDecision(quotation.status === 'Approved' ? 'Approved' : 'Approved');
+      setDecision(initialDecision || (quotation.status === 'Approved' ? 'Approved' : 'Approved'));
       setNotes(quotation.decisionNotes || '');
     }
-  }, [quotation, isOpen]);
+  }, [quotation, isOpen, initialDecision]);
 
   if (!quotation) return null;
 
