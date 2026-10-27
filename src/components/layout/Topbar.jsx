@@ -136,22 +136,6 @@ export const Topbar = ({ onToggleSidebar, onOpenAddEnquiry }) => {
 
       <div className="flex items-center gap-3">
         {header.actions}
-
-        {currentUser && (
-          <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
-            <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-xs flex items-center justify-center flex-shrink-0">
-              {currentUser.name ? currentUser.name.charAt(0) : 'U'}
-            </div>
-            <div className="hidden sm:block text-left text-xs">
-              <span className="font-semibold text-slate-900 block leading-tight truncate max-w-[120px]">
-                {currentUser.name}
-              </span>
-              <span className="text-[10px] text-slate-500 capitalize block">
-                {currentUser.role === 'admin' ? 'Office Admin' : 'Technician'}
-              </span>
-            </div>
-          </div>
-        )}
       </div>
     </header>
   );

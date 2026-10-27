@@ -185,7 +185,7 @@ export const TechniciansPage = () => {
                           <div>
                             <span className="font-semibold text-slate-900 block text-xs">{t.name}</span>
                             <span className="text-[11px] text-slate-400">
-                              {t.experienceYears} yrs exp • {activeAssignedCount} active jobs
+                              {t.experienceYears ? `${t.experienceYears} yrs exp • ` : ''}{activeAssignedCount} active jobs
                             </span>
                           </div>
                         </div>
@@ -305,7 +305,7 @@ export const TechniciansPage = () => {
               </div>
               <div>
                 <span className="text-slate-500 font-medium block">Experience:</span>
-                <p className="font-semibold text-slate-800 text-sm mt-0.5">{viewTech.experienceYears} Years</p>
+                <p className="font-semibold text-slate-800 text-sm mt-0.5">{viewTech.experienceYears ? `${viewTech.experienceYears} Years` : '—'}</p>
               </div>
             </div>
 

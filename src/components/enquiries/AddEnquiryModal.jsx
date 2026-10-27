@@ -39,12 +39,13 @@ export const AddEnquiryModal = ({ isOpen, onClose }) => {
   // Clean phone helper for comparison (extract last 10 digits)
   const cleanPhone = (p) => (p || '').replace(/\D/g, '').slice(-10);
 
-  // Phone number change with automatic client lookup
+  // Phone number change with automatic client lookup: numbers only, max 10 digits
   const handlePhoneChange = (e) => {
     const rawVal = e.target.value;
-    const cleanedInput = rawVal.replace(/\D/g, '');
+    // Strictly numbers only, exactly up to 10 digits (rejects 11th digit and non-digits)
+    const cleanedInput = rawVal.replace(/\D/g, '').slice(0, 10);
 
-    setFormData((prev) => ({ ...prev, phone: rawVal }));
+    setFormData((prev) => ({ ...prev, phone: cleanedInput }));
     if (errors.phone) {
       setErrors((prev) => ({ ...prev, phone: undefined }));
     }
@@ -125,10 +126,13 @@ export const AddEnquiryModal = ({ isOpen, onClose }) => {
 
   const validate = () => {
     const errs = {};
-    if (!formData.phone.trim()) {
+    const phoneDigits = (formData.phone || '').replace(/\D/g, '');
+    if (!phoneDigits) {
       errs.phone = 'Phone number is required';
-    } else if (!validateIndianPhone(formData.phone)) {
-      errs.phone = 'Enter a valid 10-digit Indian mobile number';
+    } else if (phoneDigits.length !== 10) {
+      errs.phone = 'Phone number must be exactly 10 digits';
+    } else if (!validateIndianPhone(phoneDigits)) {
+      errs.phone = 'Enter a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9)';
     }
     if (!formData.customerName.trim()) {
       errs.customerName = 'Customer name is required';
@@ -236,7 +240,9 @@ export const AddEnquiryModal = ({ isOpen, onClose }) => {
               <input
                 type="text"
                 name="phone"
-                placeholder="Enter Phone Number"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="Enter 10-digit mobile number"
                 value={formData.phone}
                 onChange={handlePhoneChange}
                 autoFocus

@@ -21,12 +21,15 @@ export const SiteVisitModal = ({ isOpen, onClose, enquiry }) => {
   useEffect(() => {
     if (enquiry) {
       const existing = enquiry.siteVisit;
+      // Default to 'Completed' for already scheduled visits, or 'Scheduled' for brand new visits
+      const defaultStatus = existing ? 'Completed' : 'Scheduled';
+
       setFormData({
         visitDate: existing?.visitDate || enquiry.expectedVisitDate || new Date().toISOString().split('T')[0],
         visitTime: existing?.visitTime || '10:00 AM',
         staffOrTechId: existing?.staffOrTechId || enquiry.technicianId || 'TECH-001',
         staffOrTechName: existing?.staffOrTechName || enquiry.technicianName || 'Ramesh Kumar',
-        status: existing?.status || 'Scheduled',
+        status: defaultStatus,
         notes: existing?.notes || '',
       });
       setErrors({});
@@ -107,7 +110,7 @@ export const SiteVisitModal = ({ isOpen, onClose, enquiry }) => {
           </div>
         </div>
 
-        {/* Visit Status & Scheduled Date */}
+        {/* Visit Status & Visit Date */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -118,7 +121,7 @@ export const SiteVisitModal = ({ isOpen, onClose, enquiry }) => {
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
               className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium cursor-pointer"
             >
-              <option value="Scheduled">Scheduled</option>
+              {!enquiry.siteVisit && <option value="Scheduled">Scheduled</option>}
               <option value="Completed">Completed (Allows Quotation)</option>
               <option value="Rescheduled">Rescheduled</option>
               <option value="Cancelled">Cancelled</option>
@@ -136,7 +139,7 @@ export const SiteVisitModal = ({ isOpen, onClose, enquiry }) => {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Scheduled Visit Date <span className="text-rose-500">*</span>
+              Visit Date <span className="text-rose-500">*</span>
             </label>
             <input
               type="date"

@@ -44,10 +44,9 @@ export const formatDateTime = (dateString) => {
 
 export const validateIndianPhone = (phone) => {
   if (!phone) return false;
-  // Match Indian phone: 10 digits optionally prefixed by +91 or 91 or 0, with optional spaces or hyphens
-  const cleaned = phone.replace(/[\s\-()]/g, '');
-  const pattern = /^(?:\+?91|0)?[6-9]\d{9}$/;
-  return pattern.test(cleaned);
+  // Strictly exactly 10 digits starting with 6, 7, 8, or 9 (rejects 11 or more digits)
+  const digits = phone.replace(/\D/g, '');
+  return /^[6-9]\d{9}$/.test(digits);
 };
 
 export const cleanPhoneForDisplay = (phone) => {

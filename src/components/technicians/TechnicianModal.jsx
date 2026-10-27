@@ -13,7 +13,6 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
     specialization: 'CCTV Installation',
     address: '',
     status: 'Active',
-    experienceYears: 3,
   });
 
   const [errors, setErrors] = useState({});
@@ -27,7 +26,6 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
         specialization: technicianToEdit.specialization || 'CCTV Installation',
         address: technicianToEdit.address || '',
         status: technicianToEdit.status || 'Active',
-        experienceYears: technicianToEdit.experienceYears || 3,
       });
     } else {
       setFormData({
@@ -37,7 +35,6 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
         specialization: 'CCTV Installation',
         address: '',
         status: 'Active',
-        experienceYears: 3,
       });
     }
     setErrors({});
@@ -45,11 +42,14 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
 
   const validate = () => {
     const errs = {};
+    const phoneDigits = (formData.phone || '').replace(/\D/g, '');
     if (!formData.name.trim()) errs.name = 'Technician full name is required';
-    if (!formData.phone.trim()) {
+    if (!phoneDigits) {
       errs.phone = 'Phone number is required';
-    } else if (!validateIndianPhone(formData.phone)) {
-      errs.phone = 'Enter a valid Indian mobile number';
+    } else if (phoneDigits.length !== 10) {
+      errs.phone = 'Phone number must be exactly 10 digits';
+    } else if (!validateIndianPhone(phoneDigits)) {
+      errs.phone = 'Enter a valid 10-digit Indian mobile number';
     }
     if (!formData.specialization) errs.specialization = 'Specialization is required';
     setErrors(errs);
@@ -72,22 +72,22 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      zIndex="z-[60]"
       title={technicianToEdit ? `Edit Technician: ${technicianToEdit.id}` : 'Add Field Technician'}
-      subtitle="Register technician profile for job assignment and site dispatch."
       maxWidth="max-w-xl"
       footer={
         <>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+            className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer"
           >
             {technicianToEdit ? 'Save Changes' : 'Add Technician'}
           </button>
@@ -122,10 +122,13 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
             </label>
             <input
               type="text"
-              placeholder="Enter Phone Number"
+              inputMode="numeric"
+              maxLength={10}
+              placeholder="Enter 10-digit mobile number"
               value={formData.phone}
               onChange={(e) => {
-                setFormData({ ...formData, phone: e.target.value });
+                const digits = e.target.value.replace(/\D/g, '').slice(0, 10);
+                setFormData({ ...formData, phone: digits });
                 if (errors.phone) setErrors({ ...errors, phone: undefined });
               }}
               className={`w-full px-3 py-2 text-xs rounded-lg border ${
@@ -168,34 +171,19 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
           </div>
         </div>
 
-        {/* Experience & Status */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Field Experience (Years)
-            </label>
-            <input
-              type="number"
-              min="1"
-              value={formData.experienceYears}
-              onChange={(e) => setFormData({ ...formData, experienceYears: parseInt(e.target.value, 10) || 1 })}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Deployment Status
-            </label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-            >
-              <option value="Active">Active (Available for Jobs)</option>
-              <option value="Inactive">Inactive (On Leave / Suspended)</option>
-            </select>
-          </div>
+        {/* Deployment Status */}
+        <div>
+          <label className="block text-xs font-semibold text-slate-700 mb-1">
+            Deployment Status
+          </label>
+          <select
+            value={formData.status}
+            onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+          >
+            <option value="Active">Active (Available for Jobs)</option>
+            <option value="Inactive">Inactive (On Leave / Suspended)</option>
+          </select>
         </div>
 
         {/* Address */}
@@ -217,4 +205,3 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
 };
 
 export default TechnicianModal;
-
