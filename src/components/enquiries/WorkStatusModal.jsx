@@ -11,13 +11,6 @@ export const WorkStatusModal = ({ isOpen, onClose, order }) => {
   const [startDate, setStartDate] = useState('');
   const [completionDate, setCompletionDate] = useState('');
   const [workNotes, setWorkNotes] = useState('');
-  const [checklist, setChecklist] = useState({
-    cameraMounting: false,
-    cablingConduit: false,
-    nvrSetup: false,
-    mobileAppConfig: false,
-    customerTraining: false,
-  });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -26,34 +19,11 @@ export const WorkStatusModal = ({ isOpen, onClose, order }) => {
       setStartDate(order.startDate || '');
       setCompletionDate(order.completionDate || '');
       setWorkNotes(order.workNotes || '');
-      setChecklist(
-        order.checklist || {
-          cameraMounting: false,
-          cablingConduit: false,
-          nvrSetup: false,
-          mobileAppConfig: false,
-          customerTraining: false,
-        }
-      );
       setErrors({});
     }
   }, [order, isOpen]);
 
   if (!order) return null;
-
-  const handleChecklistToggle = (key) => {
-    setChecklist((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
-  const handleSelectAllChecklist = () => {
-    setChecklist({
-      cameraMounting: true,
-      cablingConduit: true,
-      nvrSetup: true,
-      mobileAppConfig: true,
-      customerTraining: true,
-    });
-  };
 
   const validate = () => {
     const errs = {};
@@ -82,20 +52,10 @@ export const WorkStatusModal = ({ isOpen, onClose, order }) => {
       startDate,
       completionDate: workStatus === 'Completed' ? completionDate : '',
       workNotes,
-      checklist,
+      checklist: order.checklist || {},
     });
     onClose();
   };
-
-  const checklistItems = [
-    { key: 'cameraMounting', label: 'Camera Physical Mounting & Weatherproof Angle Alignment' },
-    { key: 'cablingConduit', label: 'Cat6 Cabling, Conduit Pipe Casing & Connectors Tested' },
-    { key: 'nvrSetup', label: 'NVR / DVR Storage Setup, Recording Schedule & Resolution Configured' },
-    { key: 'mobileAppConfig', label: 'Mobile App Live Streaming & Cloud Remote Access Verified' },
-    { key: 'customerTraining', label: 'Customer Handover, Admin Password Transfer & Feeds Sign-off' },
-  ];
-
-  const completedChecklistCount = Object.values(checklist).filter(Boolean).length;
 
   return (
     <Modal
@@ -216,41 +176,6 @@ export const WorkStatusModal = ({ isOpen, onClose, order }) => {
             {errors.completionDate && (
               <p className="mt-1 text-xs text-rose-500">{errors.completionDate}</p>
             )}
-          </div>
-        </div>
-
-        {/* Installation Checklist */}
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-xs font-semibold text-slate-700">
-              Technical Installation Checklist ({completedChecklistCount} of 5 verified)
-            </label>
-            <button
-              type="button"
-              onClick={handleSelectAllChecklist}
-              className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold cursor-pointer underline"
-            >
-              Mark All as Done
-            </button>
-          </div>
-
-          <div className="space-y-2 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-            {checklistItems.map((chk) => (
-              <label
-                key={chk.key}
-                className="flex items-start gap-2.5 p-2 rounded-lg hover:bg-white cursor-pointer transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={checklist[chk.key]}
-                  onChange={() => handleChecklistToggle(chk.key)}
-                  className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer"
-                />
-                <span className={`text-xs ${checklist[chk.key] ? 'font-medium text-slate-900 line-through text-slate-400' : 'text-slate-700'}`}>
-                  {chk.label}
-                </span>
-              </label>
-            ))}
           </div>
         </div>
 

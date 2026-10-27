@@ -89,10 +89,10 @@ export const EnquiryWorkbench = () => {
     <div className="space-y-6">
       {/* Main Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        {/* Workflow Tabs + Search Bar in same row */}
-        <div className="border-b border-slate-200 px-4 py-2.5 flex flex-col lg:flex-row lg:items-center justify-between gap-3 bg-slate-50/50">
-          {/* Tabs with exact 0.85rem font */}
-          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto scrollbar-none">
+        {/* Workflow Tabs + Search Bar in same row (No horizontal scrollbar) */}
+        <div className="border-b border-slate-200 px-4 py-2 flex flex-wrap items-center justify-between gap-2.5 bg-slate-50/50">
+          {/* Tabs without scrollbar */}
+          <div className="flex flex-wrap items-center gap-1">
             {[
               { id: 'All', label: 'All' },
               { id: 'Pending', label: 'Pending' },
@@ -109,7 +109,7 @@ export const EnquiryWorkbench = () => {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   style={{ fontSize: '0.85rem' }}
-                  className={`inline-flex items-center gap-1.5 pb-2.5 pt-2 px-3 text-[0.85rem] font-semibold border-b-2 transition-all whitespace-nowrap ${
+                  className={`inline-flex items-center gap-1.5 py-1.5 px-2.5 text-[0.85rem] font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
                     isSelected
                       ? 'border-blue-600 text-blue-600'
                       : 'border-transparent text-slate-600 hover:text-slate-900'
@@ -118,7 +118,7 @@ export const EnquiryWorkbench = () => {
                   <span style={{ fontSize: '0.85rem' }}>{tab.label}</span>
                   <span
                     style={{ fontSize: '0.75rem' }}
-                    className={`px-2 py-0.5 text-[0.75rem] rounded-full font-bold transition-colors ${
+                    className={`px-1.5 py-0.2 rounded-full font-bold transition-colors ${
                       isSelected
                         ? 'bg-blue-100 text-blue-700'
                         : 'bg-slate-200/80 text-slate-700'
@@ -132,21 +132,21 @@ export const EnquiryWorkbench = () => {
           </div>
 
           {/* Search Bar in same line after filters */}
-          <div className="relative w-full lg:w-80 flex-shrink-0">
+          <div className="relative w-full sm:w-64 flex-shrink-0">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search by Phone Number, Customer, or ID"
+              placeholder="Search by phone, name, ID"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{ fontSize: '0.85rem' }}
-              className="w-full pl-9 pr-8 py-2 text-[0.85rem] rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white placeholder:text-slate-400 font-medium"
+              className="w-full pl-9 pr-8 py-1.5 text-[0.85rem] rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white placeholder:text-slate-400 font-medium"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
