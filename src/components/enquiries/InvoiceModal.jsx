@@ -157,16 +157,24 @@ export const InvoiceModal = ({ isOpen, onClose, order, onOpenPreview }) => {
               <thead className="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
                 <tr>
                   <th className="py-2.5 px-3">Item Description</th>
-                  <th className="py-2.5 px-3 text-center w-20">Qty</th>
-                  <th className="py-2.5 px-3 text-right w-28">Unit Price</th>
-                  <th className="py-2.5 px-3 text-right w-32">Total</th>
+                  <th className="py-2.5 px-2 w-28">HSN / SAC</th>
+                  <th className="py-2.5 px-2 text-center w-20">GST %</th>
+                  <th className="py-2.5 px-2 text-center w-16">Qty</th>
+                  <th className="py-2.5 px-3 text-right w-24">Unit Price</th>
+                  <th className="py-2.5 px-3 text-right w-28">Total</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {order.items?.map((it, idx) => (
                   <tr key={it.id || idx}>
                     <td className="py-2 px-3 font-medium text-slate-800">{it.name}</td>
-                    <td className="py-2 px-3 text-center text-slate-700">{it.quantity}</td>
+                    <td className="py-2 px-2 font-mono text-[11px] text-slate-600 font-medium">
+                      {it.hsnSac || '—'}
+                    </td>
+                    <td className="py-2 px-2 text-center text-[11px] font-semibold text-slate-700">
+                      {it.gstRate ?? 18}%
+                    </td>
+                    <td className="py-2 px-2 text-center text-slate-700">{it.quantity}</td>
                     <td className="py-2 px-3 text-right text-slate-700">{formatINR(it.unitPrice)}</td>
                     <td className="py-2 px-3 text-right font-semibold text-slate-900">{formatINR(it.lineTotal)}</td>
                   </tr>

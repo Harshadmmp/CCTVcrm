@@ -8,6 +8,8 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
   const [formData, setFormData] = useState({
     name: '',
     category: 'Cameras',
+    hsnSac: '85258900',
+    gstRate: 18,
     description: '',
     unitPrice: '',
     unit: 'Unit',
@@ -21,6 +23,8 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
       setFormData({
         name: productToEdit.name || '',
         category: productToEdit.category || 'Cameras',
+        hsnSac: productToEdit.hsnSac || (productToEdit.category === 'Installation & Services' ? '9987' : '8525'),
+        gstRate: productToEdit.gstRate !== undefined ? Number(productToEdit.gstRate) : 18,
         description: productToEdit.description || '',
         unitPrice: productToEdit.unitPrice || '',
         unit: productToEdit.unit || 'Unit',
@@ -30,6 +34,8 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
       setFormData({
         name: '',
         category: 'Cameras',
+        hsnSac: '85258900',
+        gstRate: 18,
         description: '',
         unitPrice: '',
         unit: 'Unit',
@@ -38,6 +44,22 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
     }
     setErrors({});
   }, [productToEdit, isOpen]);
+
+  const handleCategoryChange = (cat) => {
+    let defaultHsn = formData.hsnSac;
+    if (!productToEdit) {
+      if (cat === 'Installation & Services') defaultHsn = '995469';
+      else if (cat === 'Cameras') defaultHsn = '85258900';
+      else if (cat === 'DVR / NVR') defaultHsn = '85219090';
+      else if (cat === 'Storage & Cables') defaultHsn = '84717020';
+      else if (cat === 'Power & Accessories') defaultHsn = '85044090';
+    }
+    setFormData((prev) => ({
+      ...prev,
+      category: cat,
+      hsnSac: defaultHsn,
+    }));
+  };
 
   const validate = () => {
     const errs = {};
@@ -56,6 +78,8 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
 
     const payload = {
       ...formData,
+      hsnSac: formData.hsnSac?.trim() || (formData.category === 'Installation & Services' ? '9987' : '8525'),
+      gstRate: formData.gstRate !== '' && !isNaN(Number(formData.gstRate)) ? Number(formData.gstRate) : 18,
       unitPrice: parseFloat(formData.unitPrice),
     };
 
@@ -71,22 +95,23 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
+      zIndex="z-[60]"
       title={productToEdit ? `Edit Item: ${productToEdit.id}` : 'Add Product or Service'}
-      subtitle="Define pricing and catalog items for quotations and billing."
+      subtitle="Define pricing, HSN/SAC tax codes, and catalog items for quotations and billing."
       maxWidth="max-w-xl"
       footer={
         <>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+            className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={handleSubmit}
-            className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+            className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer"
           >
             {productToEdit ? 'Save Changes' : 'Add Item'}
           </button>
@@ -101,7 +126,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
           </label>
           <input
             type="text"
-            placeholder="Enter Product or Service Name"
+            placeholder="e.g. Hikvision 4MP ColorVu Camera or CCTV Installation"
             value={formData.name}
             onChange={(e) => {
               setFormData({ ...formData, name: e.target.value });
@@ -122,7 +147,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
             </label>
             <select
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="Cameras">Cameras (Dome / Bullet / PTZ)</option>
@@ -152,6 +177,49 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
           </div>
         </div>
 
+        {/* HSN/SAC Code & GST Rate (%) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              HSN / SAC Code {formData.category === 'Installation & Services' ? '(Services SAC)' : '(Goods HSN)'}
+            </label>
+            <input
+              type="text"
+              placeholder={formData.category === 'Installation & Services' ? 'e.g. 995469 or 9987' : 'e.g. 85258900'}
+              value={formData.hsnSac}
+              onChange={(e) => setFormData({ ...formData, hsnSac: e.target.value })}
+              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 font-mono uppercase bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-[10px] text-slate-400 mt-1">
+              {formData.category === 'Installation & Services' ? 'SAC for Services (e.g. 9954 / 9987)' : 'HSN for Hardware (e.g. 8525 / 8521)'}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              GST Rate (%) <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="any"
+                placeholder="e.g. 18"
+                value={formData.gstRate}
+                onChange={(e) => setFormData({ ...formData, gstRate: e.target.value })}
+                className="w-full px-3 py-2 pr-8 text-xs rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                %
+              </span>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-1">
+              Enter custom GST percentage (e.g. 18, 12, 5, 28, 0)
+            </p>
+          </div>
+        </div>
+
         {/* Price & Status */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
@@ -160,7 +228,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
             </label>
             <input
               type="number"
-              placeholder="Enter Standard Unit Price"
+              placeholder="e.g. 3850"
               value={formData.unitPrice}
               onChange={(e) => {
                 setFormData({ ...formData, unitPrice: e.target.value });
@@ -207,4 +275,3 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
 };
 
 export default ProductModal;
-

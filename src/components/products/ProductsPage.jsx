@@ -41,7 +41,8 @@ export const ProductsPage = () => {
         const matchesName = item.name.toLowerCase().includes(q);
         const matchesId = item.id.toLowerCase().includes(q);
         const matchesDesc = (item.description || '').toLowerCase().includes(q);
-        if (!matchesName && !matchesId && !matchesDesc) return false;
+        const matchesHsn = (item.hsnSac || '').toLowerCase().includes(q);
+        if (!matchesName && !matchesId && !matchesDesc && !matchesHsn) return false;
       }
       if (categoryFilter && item.category !== categoryFilter) return false;
       if (statusFilter && item.status !== statusFilter) return false;
@@ -147,7 +148,8 @@ export const ProductsPage = () => {
                   <th className="py-3 px-4 w-28">Item ID</th>
                   <th className="py-3 px-4">Item Name</th>
                   <th className="py-3 px-3 w-36">Category</th>
-                  <th className="py-3 px-3">Description</th>
+                  <th className="py-3 px-3 w-28">HSN / SAC</th>
+                  <th className="py-3 px-3 w-20 text-center">GST %</th>
                   <th className="py-3 px-3 text-right w-28">Unit Price</th>
                   <th className="py-3 px-3 text-center w-24">Status</th>
                   <th className="py-3 px-4 w-10 text-right"></th>
@@ -171,8 +173,15 @@ export const ProductsPage = () => {
                         {p.category}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-slate-600 max-w-xs truncate" title={p.description}>
-                      {p.description || '—'}
+                    <td className="py-3 px-3">
+                      <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                        {p.hsnSac || '—'}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <span className="font-semibold text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                        {p.gstRate ?? 18}%
+                      </span>
                     </td>
                     <td className="py-3 px-3 text-right font-bold text-slate-900">
                       {formatINR(p.unitPrice)}
@@ -250,7 +259,7 @@ export const ProductsPage = () => {
           }
         >
           <div className="space-y-4 text-xs">
-            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
               <div>
                 <span className="text-slate-500 font-medium block">Item Name:</span>
                 <p className="font-bold text-slate-900 text-sm mt-0.5">{viewProduct.name}</p>
@@ -258,6 +267,14 @@ export const ProductsPage = () => {
               <div>
                 <span className="text-slate-500 font-medium block">Category:</span>
                 <p className="font-semibold text-slate-800 text-sm mt-0.5">{viewProduct.category}</p>
+              </div>
+              <div>
+                <span className="text-slate-500 font-medium block">HSN / SAC Code:</span>
+                <p className="font-mono font-bold text-slate-900 text-sm mt-0.5">{viewProduct.hsnSac || '—'}</p>
+              </div>
+              <div>
+                <span className="text-slate-500 font-medium block">GST Tax Rate:</span>
+                <p className="font-bold text-blue-700 text-sm mt-0.5">{viewProduct.gstRate ?? 18}% GST</p>
               </div>
               <div>
                 <span className="text-slate-500 font-medium block">Unit Price:</span>

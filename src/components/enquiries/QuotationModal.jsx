@@ -78,12 +78,14 @@ export const QuotationModal = ({
 
   const handleAddItem = () => {
     const activeProducts = products.filter((p) => p.status === 'Active');
-    const prod = activeProducts[0] || { id: 'custom', name: 'Custom Item', unitPrice: 1000, category: 'Hardware' };
+    const prod = activeProducts[0] || { id: 'custom', name: 'Custom Item', unitPrice: 1000, category: 'Hardware', hsnSac: '85258900', gstRate: 18 };
     const newItem = {
       id: 'item-' + Date.now() + Math.random().toString().slice(2, 5),
       productId: prod.id,
       name: prod.name,
       category: prod.category,
+      hsnSac: prod.hsnSac || (prod.category === 'Installation & Services' ? '995469' : '85258900'),
+      gstRate: prod.gstRate ?? 18,
       quantity: 1,
       unitPrice: prod.unitPrice,
       lineTotal: prod.unitPrice,
@@ -108,10 +110,31 @@ export const QuotationModal = ({
           productId: prod.id,
           name: prod.name,
           category: prod.category,
+          hsnSac: prod.hsnSac || (prod.category === 'Installation & Services' ? '995469' : '85258900'),
+          gstRate: prod.gstRate ?? 18,
           unitPrice: prod.unitPrice,
           lineTotal,
         };
       })
+    );
+  };
+
+  const handleItemHsnChange = (index, hsnSac) => {
+    setItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, hsnSac } : item))
+    );
+  };
+
+  const handleItemGstRateChange = (index, gstRate) => {
+    setItems((prev) =>
+      prev.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              gstRate: gstRate === '' ? '' : Math.max(0, parseFloat(gstRate) || 0),
+            }
+          : item
+      )
     );
   };
 
@@ -160,7 +183,11 @@ export const QuotationModal = ({
       siteAddress: enquiry.siteAddress,
       date,
       validUntil,
-      items,
+      items: items.map((it) => ({
+        ...it,
+        hsnSac: it.hsnSac || '85258900',
+        gstRate: it.gstRate ?? 18,
+      })),
       discount: Number(discount) || 0,
       subtotal,
       grandTotal,
@@ -349,16 +376,18 @@ export const QuotationModal = ({
               <thead className="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
                 <tr>
                   <th className="py-2.5 px-3">Item / Service</th>
-                  <th className="py-2.5 px-3 w-24">Qty</th>
-                  <th className="py-2.5 px-3 w-32">Unit Price (₹)</th>
-                  <th className="py-2.5 px-3 w-32 text-right">Line Total</th>
-                  <th className="py-2.5 px-3 w-10 text-center"></th>
+                  <th className="py-2.5 px-2 w-28">HSN / SAC</th>
+                  <th className="py-2.5 px-2 w-20 text-center">GST %</th>
+                  <th className="py-2.5 px-2 w-16 text-center">Qty</th>
+                  <th className="py-2.5 px-2 w-24">Unit Price (₹)</th>
+                  <th className="py-2.5 px-3 w-28 text-right">Line Total</th>
+                  <th className="py-2.5 px-2 w-8 text-center"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {items.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="py-6 text-center text-slate-400">
+                    <td colSpan="7" className="py-6 text-center text-slate-400">
                       No items added yet. Click "+ Add Item" above.
                     </td>
                   </tr>
@@ -380,16 +409,37 @@ export const QuotationModal = ({
                             ))}
                         </select>
                       </td>
-                      <td className="p-2.5">
+                      <td className="p-2">
+                        <input
+                          type="text"
+                          value={item.hsnSac || ''}
+                          onChange={(e) => handleItemHsnChange(index, e.target.value)}
+                          placeholder="85258900"
+                          className="w-full px-2 py-1.5 text-xs font-mono uppercase rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          step="any"
+                          value={item.gstRate ?? 18}
+                          onChange={(e) => handleItemGstRateChange(index, e.target.value)}
+                          placeholder="18"
+                          className="w-full px-1.5 py-1.5 text-xs text-center font-medium rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="p-2">
                         <input
                           type="number"
                           min="1"
                           value={item.quantity}
                           onChange={(e) => handleItemQtyChange(index, e.target.value)}
-                          className="w-full px-2 py-1.5 text-xs rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center font-medium"
+                          className="w-full px-1.5 py-1.5 text-xs rounded border border-slate-300 focus:outline-none focus:ring-1 focus:ring-blue-500 text-center font-medium"
                         />
                       </td>
-                      <td className="p-2.5">
+                      <td className="p-2">
                         <input
                           type="number"
                           min="0"
@@ -401,11 +451,11 @@ export const QuotationModal = ({
                       <td className="p-2.5 text-right font-semibold text-slate-800">
                         {formatINR(item.lineTotal)}
                       </td>
-                      <td className="p-2.5 text-center">
+                      <td className="p-2 text-center">
                         <button
                           type="button"
                           onClick={() => handleRemoveItem(index)}
-                          className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors"
+                          className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors cursor-pointer"
                           aria-label="Remove item"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

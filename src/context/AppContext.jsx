@@ -66,7 +66,16 @@ export const AppProvider = ({ children }) => {
   const [products, setProducts] = useState(() => {
     try {
       const saved = localStorage.getItem('cctv_products');
-      return saved ? JSON.parse(saved) : initialProducts;
+      if (!saved) return initialProducts;
+      const parsed = JSON.parse(saved);
+      return parsed.map((p) => {
+        const matching = initialProducts.find((ip) => ip.id === p.id);
+        return {
+          ...p,
+          hsnSac: p.hsnSac || matching?.hsnSac || (p.category === 'Installation & Services' ? '995469' : '85258900'),
+          gstRate: p.gstRate !== undefined ? Number(p.gstRate) : (matching?.gstRate ?? 18),
+        };
+      });
     } catch (e) {
       console.error('Error reading products from localStorage', e);
       return initialProducts;

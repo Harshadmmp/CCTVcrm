@@ -173,9 +173,11 @@ export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
                 <tr>
                   <th className="py-2.5 px-3 w-8">#</th>
                   <th className="py-2.5 px-3">Description of Work / Hardware</th>
+                  <th className="py-2.5 px-3 w-24">HSN / SAC</th>
                   <th className="py-2.5 px-3 text-center w-16">Qty</th>
-                  <th className="py-2.5 px-3 text-right w-28">Unit Price</th>
-                  <th className="py-2.5 px-3 text-right w-32">Amount</th>
+                  <th className="py-2.5 px-3 text-right w-24">Unit Price</th>
+                  <th className="py-2.5 px-3 text-center w-16">GST %</th>
+                  <th className="py-2.5 px-3 text-right w-28">Amount</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -183,8 +185,14 @@ export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
                   <tr key={item.id || idx}>
                     <td className="py-2.5 px-3 text-slate-400">{idx + 1}</td>
                     <td className="py-2.5 px-3 font-medium text-slate-900">{item.name}</td>
+                    <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600 font-medium">
+                      {item.hsnSac || '—'}
+                    </td>
                     <td className="py-2.5 px-3 text-center text-slate-700">{item.quantity}</td>
                     <td className="py-2.5 px-3 text-right text-slate-700">{formatINR(item.unitPrice)}</td>
+                    <td className="py-2.5 px-3 text-center text-[11px] font-semibold text-slate-700">
+                      {item.gstRate ?? 18}%
+                    </td>
                     <td className="py-2.5 px-3 text-right font-semibold text-slate-900">
                       {formatINR(item.lineTotal)}
                     </td>
