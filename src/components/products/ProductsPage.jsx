@@ -24,7 +24,6 @@ export const ProductsPage = () => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState(null);
@@ -45,15 +44,13 @@ export const ProductsPage = () => {
         if (!matchesName && !matchesId && !matchesDesc && !matchesHsn) return false;
       }
       if (categoryFilter && item.category !== categoryFilter) return false;
-      if (statusFilter && item.status !== statusFilter) return false;
       return true;
     });
-  }, [products, searchQuery, categoryFilter, statusFilter]);
+  }, [products, searchQuery, categoryFilter]);
 
   const clearFilters = () => {
     setSearchQuery('');
     setCategoryFilter('');
-    setStatusFilter('');
   };
 
   // Listen to Topbar Add Product action
@@ -106,21 +103,11 @@ export const ProductsPage = () => {
               ))}
             </select>
 
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Status: All</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-
-            {(searchQuery || categoryFilter || statusFilter) && (
+            {(searchQuery || categoryFilter) && (
               <button
                 type="button"
                 onClick={clearFilters}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-3.5 h-3.5" />
                 Clear
