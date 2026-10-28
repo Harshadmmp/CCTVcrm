@@ -8,6 +8,7 @@ import {
   PackageCheck,
   UserCheck,
   Wrench,
+  CheckCircle2,
   Receipt,
   PhoneCall,
   Edit,
@@ -163,10 +164,10 @@ export const EnquiryActions = ({
           <button
             type="button"
             onClick={() => onOpenWorkStatus(order)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
           >
-            <Wrench className="w-3.5 h-3.5" />
-            Start Job
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Complete Work
           </button>
         );
 
@@ -175,10 +176,10 @@ export const EnquiryActions = ({
           <button
             type="button"
             onClick={() => onOpenWorkStatus(order)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap"
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
           >
-            <Wrench className="w-3.5 h-3.5" />
-            Update Status
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Complete Work
           </button>
         );
 
@@ -261,6 +262,19 @@ export const EnquiryActions = ({
             >
               <Eye className="w-4 h-4 text-slate-400" />
               <span>View Full Details</span>
+            </button>
+
+            {/* Edit Customer Details */}
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onOpenDetails(enquiry);
+              }}
+              className="w-full px-3.5 py-2 text-left flex items-center gap-2 hover:bg-slate-50 text-slate-700 cursor-pointer"
+            >
+              <Edit className="w-4 h-4 text-blue-600" />
+              <span>Edit Customer Details</span>
             </button>
 
             {/* Follow-up always available */}
@@ -368,8 +382,8 @@ export const EnquiryActions = ({
                   }}
                   className="w-full px-3.5 py-2 text-left flex items-center gap-2 hover:bg-slate-50 text-slate-700"
                 >
-                  <Wrench className="w-4 h-4 text-purple-600" />
-                  <span>Update Work Status</span>
+                  <CheckCircle2 className="w-4 h-4 text-purple-600" />
+                  <span>Complete Work</span>
                 </button>
               </>
             )}

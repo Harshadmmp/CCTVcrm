@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Search, CheckCircle2, RotateCcw, Sparkles, Calendar } from 'lucide-react';
 import Modal from '../common/Modal';
 import { useApp } from '../../context/AppContext';
-import { validateIndianPhone } from '../../utils/formatters';
 
 const initialForm = {
   phone: '',
   customerName: '',
   email: '',
-  cameraCount: '',
+  notes: '',
   siteAddress: '',
   source: 'Direct',
   requirement: 'CCTV Installation',
@@ -90,7 +89,7 @@ export const AddEnquiryModal = ({ isOpen, onClose }) => {
       customerName: client.customerName || prev.customerName,
       email: client.email || prev.email,
       siteAddress: client.siteAddress || prev.siteAddress,
-      cameraCount: client.cameraCount || prev.cameraCount,
+      notes: client.notes || prev.notes,
     }));
     setMatchedClient(client);
     setSuggestedClients([]);
@@ -112,7 +111,7 @@ export const AddEnquiryModal = ({ isOpen, onClose }) => {
       customerName: '',
       email: '',
       siteAddress: '',
-      cameraCount: '',
+      notes: '',
     }));
   };
 
@@ -129,10 +128,8 @@ export const AddEnquiryModal = ({ isOpen, onClose }) => {
     const phoneDigits = (formData.phone || '').replace(/\D/g, '');
     if (!phoneDigits) {
       errs.phone = 'Phone number is required';
-    } else if (phoneDigits.length !== 10) {
+    } else if (phoneDigits.length !== 10 || !/^\d{10}$/.test(formData.phone)) {
       errs.phone = 'Phone number must be exactly 10 digits';
-    } else if (!validateIndianPhone(phoneDigits)) {
-      errs.phone = 'Enter a valid 10-digit Indian mobile number (starts with 6, 7, 8, or 9)';
     }
     if (!formData.customerName.trim()) {
       errs.customerName = 'Customer name is required';
@@ -155,7 +152,7 @@ export const AddEnquiryModal = ({ isOpen, onClose }) => {
     try {
       addEnquiry({
         ...formData,
-        cameraCount: formData.cameraCount ? parseInt(formData.cameraCount, 10) : null,
+        notes: formData.notes?.trim() || '',
         requiresSiteVisit: Boolean(formData.requiresSiteVisit),
         visitDate: formData.requiresSiteVisit ? formData.visitDate : '',
         staffOrTechId: formData.requiresSiteVisit ? (formData.staffOrTechId || 'TECH-001') : null,
@@ -303,7 +300,7 @@ export const AddEnquiryModal = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Row 2: Email Address & Camera Count (Balanced 2-Column Grid with Equal Height) */}
+        {/* Row 2: Email Address & Notes (Balanced 2-Column Grid with Equal Height) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -326,14 +323,13 @@ export const AddEnquiryModal = ({ isOpen, onClose }) => {
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-              Camera Count
+              Notes
             </label>
             <input
-              type="number"
-              name="cameraCount"
-              placeholder="Enter Camera Count"
-              min="1"
-              value={formData.cameraCount}
+              type="text"
+              name="notes"
+              placeholder="Enter enquiry notes / remarks"
+              value={formData.notes || ''}
               onChange={handleChange}
               className="w-full h-10 px-3 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />

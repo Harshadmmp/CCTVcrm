@@ -44,9 +44,9 @@ export const formatDateTime = (dateString) => {
 
 export const validateIndianPhone = (phone) => {
   if (!phone) return false;
-  // Strictly exactly 10 digits starting with 6, 7, 8, or 9 (rejects 11 or more digits)
+  // Strictly numbers only, exactly 10 digits
   const digits = phone.replace(/\D/g, '');
-  return /^[6-9]\d{9}$/.test(digits);
+  return /^\d{10}$/.test(digits);
 };
 
 export const cleanPhoneForDisplay = (phone) => {

@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { Search, X } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import EnquiryTable from './EnquiryTable';
 import AddEnquiryModal from './AddEnquiryModal';
@@ -16,11 +15,16 @@ import InvoicePreviewModal from './InvoicePreviewModal';
 import EnquiryDetailsModal from './EnquiryDetailsModal';
 
 export const EnquiryWorkbench = () => {
-  const { enquiries, metrics, technicians, quotations, orders, invoices } = useApp();
-
-  // Filter States
-  const [activeTab, setActiveTab] = useState('All'); // 'All', 'Pending', 'Quotation Sent', 'Confirmed', 'Ongoing', 'Completed'
-  const [searchQuery, setSearchQuery] = useState('');
+  const {
+    enquiries,
+    metrics,
+    technicians,
+    quotations,
+    orders,
+    invoices,
+    activeWorkflowTab,
+    workflowSearchQuery,
+  } = useApp();
 
   // Modal States
   const [isAddEnquiryOpen, setIsAddEnquiryOpen] = useState(false);
@@ -38,38 +42,24 @@ export const EnquiryWorkbench = () => {
   const [invoiceOrder, setInvoiceOrder] = useState(null);
   const [previewInvoice, setPreviewInvoice] = useState(null);
 
-  // Tab counts
-  const tabCounts = useMemo(() => {
-    return {
-      All: enquiries.length,
-      Pending: enquiries.filter((e) => e.workflowStatus === 'Pending').length,
-      'Quotation Sent': enquiries.filter((e) => e.workflowStatus === 'Quotation Sent').length,
-      Confirmed: enquiries.filter(
-        (e) => e.workflowStatus === 'Confirmed' || e.workflowStatus === 'Customer Approved'
-      ).length,
-      Ongoing: enquiries.filter((e) => e.workflowStatus === 'Ongoing').length,
-      Completed: enquiries.filter((e) => e.workflowStatus === 'Completed').length,
-    };
-  }, [enquiries]);
-
   // Filtered enquiries
   const filteredEnquiries = useMemo(() => {
     return enquiries.filter((item) => {
       // 1. Workflow Tab Filter
-      if (activeTab === 'Pending' && item.workflowStatus !== 'Pending') return false;
-      if (activeTab === 'Quotation Sent' && item.workflowStatus !== 'Quotation Sent') return false;
+      if (activeWorkflowTab === 'Pending' && item.workflowStatus !== 'Pending') return false;
+      if (activeWorkflowTab === 'Quotation Sent' && item.workflowStatus !== 'Quotation Sent') return false;
       if (
-        activeTab === 'Confirmed' &&
+        activeWorkflowTab === 'Confirmed' &&
         item.workflowStatus !== 'Confirmed' &&
         item.workflowStatus !== 'Customer Approved'
       )
         return false;
-      if (activeTab === 'Ongoing' && item.workflowStatus !== 'Ongoing') return false;
-      if (activeTab === 'Completed' && item.workflowStatus !== 'Completed') return false;
+      if (activeWorkflowTab === 'Ongoing' && item.workflowStatus !== 'Ongoing') return false;
+      if (activeWorkflowTab === 'Completed' && item.workflowStatus !== 'Completed') return false;
 
       // 2. Search (Phone Number, Customer Name, Enquiry ID, Address)
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
+      if (workflowSearchQuery.trim()) {
+        const query = workflowSearchQuery.toLowerCase().trim();
         const cleanQuery = query.replace(/\D/g, '');
         const cleanItemPhone = (item.phone || '').replace(/\D/g, '');
         const matchesName = item.customerName.toLowerCase().includes(query);
@@ -83,79 +73,15 @@ export const EnquiryWorkbench = () => {
 
       return true;
     });
-  }, [enquiries, activeTab, searchQuery]);
+  }, [enquiries, activeWorkflowTab, workflowSearchQuery]);
 
   return (
     <div className="space-y-6">
       {/* Main Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        {/* Workflow Tabs + Search Bar in same row (No horizontal scrollbar) */}
-        <div className="border-b border-slate-200 px-4 py-2 flex flex-wrap items-center justify-between gap-2.5 bg-slate-50/50">
-          {/* Tabs without scrollbar */}
-          <div className="flex flex-wrap items-center gap-1">
-            {[
-              { id: 'All', label: 'All' },
-              { id: 'Pending', label: 'Pending' },
-              { id: 'Quotation Sent', label: 'Quotation Sent' },
-              { id: 'Confirmed', label: 'Confirmed / Approved' },
-              { id: 'Ongoing', label: 'Ongoing' },
-              { id: 'Completed', label: 'Completed' },
-            ].map((tab) => {
-              const isSelected = activeTab === tab.id;
-              const count = tabCounts[tab.id] || 0;
-              return (
-                <button
-                  type="button"
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  style={{ fontSize: '0.85rem' }}
-                  className={`inline-flex items-center gap-1.5 py-1.5 px-2.5 text-[0.85rem] font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
-                    isSelected
-                      ? 'border-blue-600 text-blue-600'
-                      : 'border-transparent text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <span style={{ fontSize: '0.85rem' }}>{tab.label}</span>
-                  <span
-                    style={{ fontSize: '0.75rem' }}
-                    className={`px-1.5 py-0.2 rounded-full font-bold transition-colors ${
-                      isSelected
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-slate-200/80 text-slate-700'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Search Bar in same line after filters */}
-          <div className="relative w-full sm:w-64 flex-shrink-0">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search by phone, name, ID"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{ fontSize: '0.85rem' }}
-              className="w-full pl-9 pr-8 py-1.5 text-[0.85rem] rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white placeholder:text-slate-400 font-medium"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
         {/* Enquiries Table */}
         <EnquiryTable
+          activeTab={activeWorkflowTab}
           enquiries={filteredEnquiries}
           onOpenDetails={(enq) => setDetailsEnquiryId(enq.id)}
           onOpenSiteVisit={(enq) => setSiteVisitEnquiry(enq)}

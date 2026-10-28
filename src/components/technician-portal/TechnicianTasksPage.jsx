@@ -28,15 +28,20 @@ export const TechnicianTasksPage = () => {
     updateWorkStatus,
     completeSiteSurvey,
     addToast,
+    techTaskSelectedTechId,
+    setTechTaskSelectedTechId,
+    techTaskActiveTab,
+    setTechTaskActiveTab,
+    techTaskSearchQuery,
+    setTechTaskSearchQuery,
   } = useApp();
 
-  // If user is Admin, they can select which technician's tasks to view; if technician, locked to self
-  const [selectedTechId, setSelectedTechId] = useState(() => {
-    if (currentUser?.role === 'technician') {
-      return currentUser.id;
-    }
-    return technicians[0]?.id || 'TECH-001';
-  });
+  const selectedTechId = techTaskSelectedTechId;
+  const setSelectedTechId = setTechTaskSelectedTechId;
+  const activeTab = techTaskActiveTab;
+  const setActiveTab = setTechTaskActiveTab;
+  const searchQuery = techTaskSearchQuery;
+  const setSearchQuery = setTechTaskSearchQuery;
 
   const activeTech = useMemo(() => {
     if (currentUser?.role === 'technician') {
@@ -45,20 +50,10 @@ export const TechnicianTasksPage = () => {
     return technicians.find((t) => t.id === selectedTechId) || technicians[0] || {};
   }, [currentUser, technicians, selectedTechId]);
 
-  // Tab filter: 'all' | 'orders' | 'surveys' | 'completed'
-  const [activeTab, setActiveTab] = useState('all');
-  const [searchQuery, setSearchQuery] = useState('');
-
   // Selected task for modal view & actions
   const [activeTask, setActiveTask] = useState(null);
 
-  // In-progress job checklist & notes
-  const [jobChecklist, setJobChecklist] = useState({
-    camerasMounted: true,
-    cablingTested: true,
-    recordingActive: true,
-    clientDemoGiven: false,
-  });
+  // In-progress job completion notes
   const [jobNotes, setJobNotes] = useState('');
 
   // Survey completion findings
@@ -212,10 +207,16 @@ export const TechnicianTasksPage = () => {
     const today = new Date().toISOString().split('T')[0];
 
     updateWorkStatus(orderId, {
+      enquiryId: activeTask?.refId,
       workStatus: 'Completed',
       completionDate: today,
       workNotes: jobNotes || 'Installation completed and camera feeds verified by client.',
-      checklist: jobChecklist,
+      checklist: {
+        camerasMounted: true,
+        cablingTested: true,
+        recordingActive: true,
+        clientDemoGiven: true,
+      },
     });
 
     addToast('Job Completed', `Order ${orderId} marked as Completed.`);
@@ -239,89 +240,6 @@ export const TechnicianTasksPage = () => {
     <div className="space-y-5">
       {/* Main Task Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        {/* Navigation Tabs and Search / Switcher Header */}
-        <div className="p-4 border-b border-slate-200 bg-white flex flex-col md:flex-row md:items-center justify-between gap-3">
-          {/* Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'all'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              All Tasks ({counts.total})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('orders')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'orders'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Installation Jobs ({counts.ordersCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('surveys')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'surveys'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Site Surveys ({counts.surveysCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('completed')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'completed'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              Completed ({counts.completedCount})
-            </button>
-          </div>
-
-          {/* Right: Admin Switcher & Search Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
-            {currentUser?.role === 'admin' && (
-              <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                <span className="font-semibold whitespace-nowrap">Technician:</span>
-                <select
-                  value={selectedTechId}
-                  onChange={(e) => setSelectedTechId(e.target.value)}
-                  className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {technicians.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({t.id})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Search Box */}
-            <div className="relative max-w-xs w-full">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search by customer, phone, or address"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
-
         {/* Table View: Clickable rows showing only necessary details */}
         <div className="overflow-x-auto">
           {filteredTasks.length === 0 ? (
@@ -389,9 +307,12 @@ export const TechnicianTasksPage = () => {
 
                       {/* 4. Site Address */}
                       <td className="py-3.5 px-4">
-                        <div className="flex items-start gap-1.5 text-xs text-slate-600 max-w-sm">
+                        <div className="flex items-start gap-1.5 text-xs text-slate-600 w-[200px] max-w-[210px]">
                           <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
-                          <span className="truncate" title={task.siteAddress}>
+                          <span
+                            className="line-clamp-2 break-words leading-tight text-slate-700"
+                            title={task.siteAddress}
+                          >
                             {task.siteAddress}
                           </span>
                         </div>
@@ -547,79 +468,15 @@ export const TechnicianTasksPage = () => {
                   )}
                 </div>
 
-                {/* If Order is In Progress: Checklist & completion notes */}
+                {/* If Order is In Progress: completion notes */}
                 {activeTask.status === 'In Progress' && (
                   <div className="space-y-3 pt-2 border-t border-slate-200">
-                    <div>
-                      <label className="block font-semibold text-slate-800 mb-1.5">
-                        Field Installation Checklist:
-                      </label>
-                      <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-medium">
-                          <input
-                            type="checkbox"
-                            checked={jobChecklist.camerasMounted}
-                            onChange={(e) =>
-                              setJobChecklist((prev) => ({
-                                ...prev,
-                                camerasMounted: e.target.checked,
-                              }))
-                            }
-                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-                          />
-                          <span>1. All camera mountings & weatherproofing verified</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-medium">
-                          <input
-                            type="checkbox"
-                            checked={jobChecklist.cablingTested}
-                            onChange={(e) =>
-                              setJobChecklist((prev) => ({
-                                ...prev,
-                                cablingTested: e.target.checked,
-                              }))
-                            }
-                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-                          />
-                          <span>2. Cat6 cable conduits laid and RJ45 crimping tested</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-medium">
-                          <input
-                            type="checkbox"
-                            checked={jobChecklist.recordingActive}
-                            onChange={(e) =>
-                              setJobChecklist((prev) => ({
-                                ...prev,
-                                recordingActive: e.target.checked,
-                              }))
-                            }
-                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-                          />
-                          <span>3. NVR/DVR continuous recording confirmed active</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer text-slate-700 font-medium">
-                          <input
-                            type="checkbox"
-                            checked={jobChecklist.clientDemoGiven}
-                            onChange={(e) =>
-                              setJobChecklist((prev) => ({
-                                ...prev,
-                                clientDemoGiven: e.target.checked,
-                              }))
-                            }
-                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-                          />
-                          <span>4. Client mobile app configured and demo provided</span>
-                        </label>
-                      </div>
-                    </div>
-
                     <div>
                       <label className="block font-semibold text-slate-800 mb-1">
                         Technician Completion Notes:
                       </label>
                       <textarea
-                        rows={2}
+                        rows={3}
                         value={jobNotes}
                         onChange={(e) => setJobNotes(e.target.value)}
                         placeholder="e.g. All cameras operational. Night vision tested. Handover completed."

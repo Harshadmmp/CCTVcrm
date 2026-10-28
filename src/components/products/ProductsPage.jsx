@@ -2,9 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   Package,
   Plus,
-  Search,
-  Filter,
-  X,
   Edit2,
   Trash2,
   Tag,
@@ -20,37 +17,37 @@ import ProductModal from './ProductModal';
 import Modal from '../common/Modal';
 
 export const ProductsPage = () => {
-  const { products, deleteProduct } = useApp();
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
+  const {
+    products,
+    deleteProduct,
+    productSearchQuery,
+    setProductSearchQuery,
+    productCategoryFilter,
+    setProductCategoryFilter,
+  } = useApp();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState(null);
   const [viewProduct, setViewProduct] = useState(null);
 
-  const categories = useMemo(() => {
-    return Array.from(new Set(products.map((p) => p.category)));
-  }, [products]);
-
   const filteredProducts = useMemo(() => {
     return products.filter((item) => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
+      if (productSearchQuery && productSearchQuery.trim()) {
+        const q = productSearchQuery.toLowerCase().trim();
         const matchesName = item.name.toLowerCase().includes(q);
         const matchesId = item.id.toLowerCase().includes(q);
         const matchesDesc = (item.description || '').toLowerCase().includes(q);
         const matchesHsn = (item.hsnSac || '').toLowerCase().includes(q);
         if (!matchesName && !matchesId && !matchesDesc && !matchesHsn) return false;
       }
-      if (categoryFilter && item.category !== categoryFilter) return false;
+      if (productCategoryFilter && item.category !== productCategoryFilter) return false;
       return true;
     });
-  }, [products, searchQuery, categoryFilter]);
+  }, [products, productSearchQuery, productCategoryFilter]);
 
   const clearFilters = () => {
-    setSearchQuery('');
-    setCategoryFilter('');
+    setProductSearchQuery('');
+    setProductCategoryFilter('');
   };
 
   // Listen to Topbar Add Product action
@@ -67,65 +64,24 @@ export const ProductsPage = () => {
     <div className="space-y-6">
       {/* Main Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        {/* Filter Controls */}
-        <div className="p-4 border-b border-slate-200 bg-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search by Product Name, ID, or Category"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={categoryFilter}
-              onChange={(e) => setCategoryFilter(e.target.value)}
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Category: All</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
-              ))}
-            </select>
-
-            {(searchQuery || categoryFilter) && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-
         {/* Table */}
         <div className="overflow-x-auto">
           {filteredProducts.length === 0 ? (
             <EmptyState
               title="No products or services found"
-              description="Try adjusting your category filter or search terms."
-              actionLabel="Add New Item"
+              description={
+                productSearchQuery || productCategoryFilter
+                  ? "Try adjusting your category filter or search terms."
+                  : "Start by adding your first product or service."
+              }
+              actionLabel={productSearchQuery || productCategoryFilter ? "Clear Filters" : "Add New Item"}
               onAction={() => {
-                setProductToEdit(null);
-                setIsModalOpen(true);
+                if (productSearchQuery || productCategoryFilter) {
+                  clearFilters();
+                } else {
+                  setProductToEdit(null);
+                  setIsModalOpen(true);
+                }
               }}
             />
           ) : (

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import {
   initialEnquiries,
   initialQuotations,
@@ -11,12 +11,44 @@ import { generateNextId } from '../utils/formatters';
 
 const AppContext = createContext(null);
 
+const isDummyTestEntry = (item) => {
+  if (!item) return false;
+  const name = typeof item === 'string' ? item : (item.customerName || '');
+  const id = typeof item === 'object' ? (item.id || item.enquiryId || '') : '';
+  const n = (name || '').toLowerCase().trim();
+  const i = (id || '').toUpperCase().trim();
+  if (
+    ['new', 'testing', 'hml', 'test', 'vijay', 'har', 'sunrise international school', 'hotel royal heritage'].includes(n) ||
+    n.startsWith('test ') ||
+    i === 'ENQ-2026-008' ||
+    i === 'QT-2026-008' ||
+    i === 'ORD-2026-008' ||
+    i === 'ENQ-2026-009' ||
+    i === 'QT-2026-009' ||
+    i === 'ORD-2026-009' ||
+    i === 'INV-2026-009'
+  ) {
+    return true;
+  }
+  if (typeof item === 'object') {
+    if (item.workflowStatus === 'Completed' || item.workStatus === 'Completed') {
+      return true;
+    }
+  }
+  return false;
+};
+
 export const AppProvider = ({ children }) => {
-  // Initialize state from LocalStorage or seed data
+  // Initialize state from LocalStorage or seed data (filtering out manual dummy test data)
   const [enquiries, setEnquiries] = useState(() => {
     try {
       const saved = localStorage.getItem('cctv_enquiries_v5');
-      return saved ? JSON.parse(saved) : initialEnquiries;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const filtered = parsed.filter((e) => !isDummyTestEntry(e));
+        return filtered.length > 0 ? filtered : initialEnquiries;
+      }
+      return initialEnquiries;
     } catch (e) {
       console.error('Error reading enquiries from localStorage', e);
       return initialEnquiries;
@@ -26,7 +58,12 @@ export const AppProvider = ({ children }) => {
   const [quotations, setQuotations] = useState(() => {
     try {
       const saved = localStorage.getItem('cctv_quotations_v5');
-      return saved ? JSON.parse(saved) : initialQuotations;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const filtered = parsed.filter((q) => !isDummyTestEntry(q));
+        return filtered.length > 0 ? filtered : initialQuotations;
+      }
+      return initialQuotations;
     } catch (e) {
       console.error('Error reading quotations from localStorage', e);
       return initialQuotations;
@@ -36,7 +73,12 @@ export const AppProvider = ({ children }) => {
   const [orders, setOrders] = useState(() => {
     try {
       const saved = localStorage.getItem('cctv_orders_v5');
-      return saved ? JSON.parse(saved) : initialOrders;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const filtered = parsed.filter((o) => !isDummyTestEntry(o));
+        return filtered.length > 0 ? filtered : initialOrders;
+      }
+      return initialOrders;
     } catch (e) {
       console.error('Error reading orders from localStorage', e);
       return initialOrders;
@@ -46,7 +88,12 @@ export const AppProvider = ({ children }) => {
   const [invoices, setInvoices] = useState(() => {
     try {
       const saved = localStorage.getItem('cctv_invoices');
-      return saved ? JSON.parse(saved) : initialInvoices;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const filtered = parsed.filter((i) => !isDummyTestEntry(i));
+        return filtered.length > 0 ? filtered : initialInvoices;
+      }
+      return initialInvoices;
     } catch (e) {
       console.error('Error reading invoices from localStorage', e);
       return initialInvoices;
@@ -95,6 +142,32 @@ export const AppProvider = ({ children }) => {
 
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
+
+  // Workflow workbench active tab and search query state (shared between Topbar and Workbench)
+  const [activeWorkflowTab, setActiveWorkflowTab] = useState('All');
+  const [workflowSearchQuery, setWorkflowSearchQuery] = useState('');
+
+  // Products page active category filter and search query state (shared between Topbar and ProductsPage)
+  const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [productCategoryFilter, setProductCategoryFilter] = useState('');
+
+  // Technicians page specialization filter and search query state (shared between Topbar and TechniciansPage)
+  const [technicianSearchQuery, setTechnicianSearchQuery] = useState('');
+  const [technicianSpecializationFilter, setTechnicianSpecializationFilter] = useState('');
+
+  // Technician Tasks Portal state (shared between Topbar and TechnicianTasksPage)
+  const [techTaskSelectedTechId, setTechTaskSelectedTechId] = useState(() => {
+    try {
+      const savedAuth = localStorage.getItem('cctv_auth_user');
+      const authUser = savedAuth ? JSON.parse(savedAuth) : null;
+      if (authUser?.role === 'technician') {
+        return authUser.id;
+      }
+    } catch (e) {}
+    return 'TECH-001';
+  });
+  const [techTaskActiveTab, setTechTaskActiveTab] = useState('all');
+  const [techTaskSearchQuery, setTechTaskSearchQuery] = useState('');
 
   // Persist to LocalStorage on changes
   useEffect(() => {
@@ -357,7 +430,43 @@ export const AppProvider = ({ children }) => {
         };
       })
     );
-    addToast('Enquiry Updated', `Enquiry ${id} was updated successfully.`);
+
+    // Propagate customer updates to associated records if any customer fields changed
+    const customerFields = {};
+    if (updatedFields.customerName !== undefined) customerFields.customerName = updatedFields.customerName;
+    if (updatedFields.phone !== undefined) {
+      customerFields.phone = updatedFields.phone;
+      customerFields.customerPhone = updatedFields.phone;
+    }
+    if (updatedFields.email !== undefined) {
+      customerFields.email = updatedFields.email;
+      customerFields.customerEmail = updatedFields.email;
+    }
+    if (updatedFields.siteAddress !== undefined) customerFields.siteAddress = updatedFields.siteAddress;
+
+    if (Object.keys(customerFields).length > 0) {
+      setQuotations((prev) =>
+        prev.map((q) => (q.enquiryId === id ? { ...q, ...customerFields } : q))
+      );
+      setOrders((prev) =>
+        prev.map((o) => (o.enquiryId === id ? { ...o, ...customerFields } : o))
+      );
+      setInvoices((prev) =>
+        prev.map((i) =>
+          i.enquiryId === id
+            ? {
+                ...i,
+                customerName: customerFields.customerName ?? i.customerName,
+                customerPhone: customerFields.phone ?? i.customerPhone,
+                customerEmail: customerFields.email ?? i.customerEmail,
+                siteAddress: customerFields.siteAddress ?? i.siteAddress,
+              }
+            : i
+        )
+      );
+    }
+
+    addToast('Customer Updated', `Customer information updated successfully.`);
   };
 
   // 3. Schedule or Update Site Visit
@@ -438,13 +547,13 @@ export const AppProvider = ({ children }) => {
 
   // 5. Update Quotation
   const updateQuotation = (quotationId, updatedFields) => {
-    let targetEnquiryId = null;
-    let newStatus = updatedFields.status;
+    const existingQuote = quotations.find((q) => q.id === quotationId);
+    const targetEnquiryId = updatedFields.enquiryId || existingQuote?.enquiryId;
+    const newStatus = updatedFields.status;
 
     setQuotations((prev) =>
       prev.map((q) => {
         if (q.id !== quotationId) return q;
-        targetEnquiryId = q.enquiryId;
         return {
           ...q,
           ...updatedFields,
@@ -479,12 +588,12 @@ export const AppProvider = ({ children }) => {
 
   // 6. Record Customer Decision
   const recordCustomerDecision = (quotationId, decision, notes = '') => {
-    let targetEnquiryId = null;
+    const existingQuote = quotations.find((q) => q.id === quotationId);
+    const targetEnquiryId = existingQuote?.enquiryId;
 
     setQuotations((prev) =>
       prev.map((q) => {
         if (q.id !== quotationId) return q;
-        targetEnquiryId = q.enquiryId;
         return {
           ...q,
           status: decision,
@@ -497,7 +606,7 @@ export const AppProvider = ({ children }) => {
     if (targetEnquiryId) {
       setEnquiries((prev) =>
         prev.map((enq) => {
-          if (enq.id !== targetEnquiryId) return enq;
+          if (enq.id !== targetEnquiryId && enq.quotationId !== quotationId) return enq;
 
           let newWorkflowStatus = enq.workflowStatus;
           if (decision === 'Approved') {
@@ -633,21 +742,25 @@ export const AppProvider = ({ children }) => {
       return;
     }
 
-    let targetEnquiryId = null;
+    const existingOrder = orders.find((ord) => ord.id === orderId);
+    const targetEnquiryId = existingOrder?.enquiryId;
 
     setOrders((prev) =>
       prev.map((ord) => {
         if (ord.id !== orderId) return ord;
-        targetEnquiryId = ord.enquiryId;
+        const today = new Date().toISOString().split('T')[0];
         return {
           ...ord,
           assignedTechnicianId: tech.id,
           assignedTechnicianName: tech.name,
           technicianPhone: tech.phone,
           technicianEmail: tech.email || '',
-          assignmentDate: ord.assignmentDate || new Date().toISOString().split('T')[0],
-          workStatus: ord.workStatus === 'Completed' ? 'Completed' : 'Assigned',
-          workNotes: notes ? `${ord.workNotes || ''}\n${notes}`.trim() : (ord.workNotes || 'Technician assigned for installation.'),
+          assignmentDate: ord.assignmentDate || today,
+          startDate: ord.startDate || today,
+          workStatus: ord.workStatus === 'Completed' ? 'Completed' : 'In Progress',
+          workNotes: notes
+            ? `${ord.workNotes || ''}\n${notes}`.trim()
+            : (ord.workNotes || 'Technician assigned. Installation In Progress.'),
         };
       })
     );
@@ -655,7 +768,7 @@ export const AppProvider = ({ children }) => {
     if (targetEnquiryId) {
       setEnquiries((prev) =>
         prev.map((enq) => {
-          if (enq.id !== targetEnquiryId) return enq;
+          if (enq.id !== targetEnquiryId && enq.orderId !== orderId) return enq;
           return {
             ...enq,
             technicianId: tech.id,
@@ -665,13 +778,13 @@ export const AppProvider = ({ children }) => {
               ...(enq.workStatusHistory || []),
               {
                 id: `WSH-${Date.now()}`,
-                status: 'Technician Assigned',
+                status: 'Technician Assigned (In Progress)',
                 timestamp:
                   new Date().toLocaleDateString('en-IN') +
                   ' ' +
                   new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
                 updatedBy: 'Dispatcher',
-                notes: `Assigned lead technician ${tech.name} (${tech.id}) for execution.`,
+                notes: `Assigned lead technician ${tech.name} (${tech.id}). Work directly In Progress.`,
               },
             ],
           };
@@ -679,19 +792,21 @@ export const AppProvider = ({ children }) => {
       );
     }
 
-    addToast('Technician Assigned', `${tech.name} assigned to Order ${orderId}. Task is now live on technician dashboard.`);
+    addToast('Technician Assigned', `${tech.name} assigned to Order ${orderId}. Job is directly In Progress.`);
   };
 
   // 9. Update Work Status
   const updateWorkStatus = (orderId, statusData) => {
-    const { workStatus, startDate, completionDate, workNotes, checklist } = statusData;
+    const { workStatus, startDate, completionDate, workNotes, checklist, enquiryId } = statusData;
 
-    let targetEnquiryId = null;
+    const existingOrder = orders.find(
+      (ord) => ord.id === orderId || (enquiryId && ord.enquiryId === enquiryId)
+    );
+    const targetEnquiryId = enquiryId || existingOrder?.enquiryId;
 
     setOrders((prev) =>
       prev.map((ord) => {
-        if (ord.id !== orderId) return ord;
-        targetEnquiryId = ord.enquiryId;
+        if (ord.id !== orderId && (!targetEnquiryId || ord.enquiryId !== targetEnquiryId)) return ord;
         return {
           ...ord,
           workStatus,
@@ -703,10 +818,10 @@ export const AppProvider = ({ children }) => {
       })
     );
 
-    if (targetEnquiryId) {
+    if (targetEnquiryId || orderId) {
       setEnquiries((prev) =>
         prev.map((enq) => {
-          if (enq.id !== targetEnquiryId) return enq;
+          if (enq.id !== targetEnquiryId && (!orderId || enq.orderId !== orderId)) return enq;
 
           let newWorkflowStatus = enq.workflowStatus;
           if (workStatus === 'In Progress') {
@@ -936,6 +1051,48 @@ export const AppProvider = ({ children }) => {
   const completedJobs = orders.filter((o) => o.workStatus === 'Completed').length;
   const invoicesPendingReview = invoices.filter((i) => i.status === 'Draft').length;
 
+  const activeTechForPortal = useMemo(() => {
+    if (currentUser?.role === 'technician') {
+      return currentUser;
+    }
+    return technicians.find((t) => t.id === techTaskSelectedTechId) || technicians[0] || {};
+  }, [currentUser, technicians, techTaskSelectedTechId]);
+
+  const techTaskCounts = useMemo(() => {
+    if (!activeTechForPortal?.id && !activeTechForPortal?.name) {
+      return { total: 0, ordersCount: 0, surveysCount: 0, completedCount: 0 };
+    }
+    const techOrders = orders.filter(
+      (o) =>
+        (activeTechForPortal.id && o.assignedTechnicianId?.toLowerCase() === activeTechForPortal.id.toLowerCase()) ||
+        (activeTechForPortal.name && o.assignedTechnicianName?.toLowerCase().trim() === activeTechForPortal.name.toLowerCase().trim()) ||
+        (activeTechForPortal.phone && o.technicianPhone && o.technicianPhone.replace(/\D/g, '').endsWith(activeTechForPortal.phone.replace(/\D/g, '').slice(-10)))
+    );
+
+    const techSurveys = enquiries.filter((e) => {
+      const sv = e.siteVisit;
+      if (!sv) return false;
+      const matchesTech =
+        (sv.staffOrTechId && activeTechForPortal.id && sv.staffOrTechId.toLowerCase() === activeTechForPortal.id.toLowerCase()) ||
+        (sv.staffOrTechName && activeTechForPortal.name && sv.staffOrTechName.toLowerCase().trim() === activeTechForPortal.name.toLowerCase().trim()) ||
+        (e.technicianId && activeTechForPortal.id && e.technicianId.toLowerCase() === activeTechForPortal.id.toLowerCase()) ||
+        (e.technicianName && activeTechForPortal.name && e.technicianName.toLowerCase().trim() === activeTechForPortal.name.toLowerCase().trim());
+      return matchesTech;
+    });
+
+    const completedOrders = techOrders.filter((o) => o.workStatus === 'Completed').length;
+    const completedSurveys = techSurveys.filter((e) => e.siteVisit?.status === 'Completed').length;
+    const completedCount = completedOrders + completedSurveys;
+    const total = techOrders.length + techSurveys.length;
+
+    return {
+      total,
+      ordersCount: techOrders.length,
+      surveysCount: techSurveys.length,
+      completedCount,
+    };
+  }, [orders, enquiries, activeTechForPortal]);
+
   return (
     <AppContext.Provider
       value={{
@@ -974,6 +1131,29 @@ export const AppProvider = ({ children }) => {
         addTechnician,
         updateTechnician,
         deleteTechnician,
+        // Workflow state
+        activeWorkflowTab,
+        setActiveWorkflowTab,
+        workflowSearchQuery,
+        setWorkflowSearchQuery,
+        // Products state
+        productSearchQuery,
+        setProductSearchQuery,
+        productCategoryFilter,
+        setProductCategoryFilter,
+        // Technicians state
+        technicianSearchQuery,
+        setTechnicianSearchQuery,
+        technicianSpecializationFilter,
+        setTechnicianSpecializationFilter,
+        // Technician Portal state
+        techTaskSelectedTechId,
+        setTechTaskSelectedTechId,
+        techTaskActiveTab,
+        setTechTaskActiveTab,
+        techTaskSearchQuery,
+        setTechTaskSearchQuery,
+        techTaskCounts,
         // Derived metrics
         metrics: {
           totalEnquiries,

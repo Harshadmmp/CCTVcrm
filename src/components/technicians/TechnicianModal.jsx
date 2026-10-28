@@ -46,10 +46,8 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
     if (!formData.name.trim()) errs.name = 'Technician full name is required';
     if (!phoneDigits) {
       errs.phone = 'Phone number is required';
-    } else if (phoneDigits.length !== 10) {
+    } else if (phoneDigits.length !== 10 || !/^\d{10}$/.test(formData.phone)) {
       errs.phone = 'Phone number must be exactly 10 digits';
-    } else if (!validateIndianPhone(phoneDigits)) {
-      errs.phone = 'Enter a valid 10-digit Indian mobile number';
     }
     if (!formData.specialization) errs.specialization = 'Specialization is required';
     setErrors(errs);

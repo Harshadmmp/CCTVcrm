@@ -3,9 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import {
   Users,
   Plus,
-  Search,
-  Filter,
-  X,
   Phone,
   Mail,
   MapPin,
@@ -25,42 +22,37 @@ import Modal from '../common/Modal';
 
 export const TechniciansPage = () => {
   const navigate = useNavigate();
-  const { technicians, deleteTechnician, orders } = useApp();
-
-  const [searchQuery, setSearchQuery] = useState('');
-  const [specializationFilter, setSpecializationFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const {
+    technicians,
+    deleteTechnician,
+    orders,
+    technicianSearchQuery,
+    setTechnicianSearchQuery,
+    technicianSpecializationFilter,
+    setTechnicianSpecializationFilter,
+  } = useApp();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [technicianToEdit, setTechnicianToEdit] = useState(null);
   const [viewTech, setViewTech] = useState(null);
 
-  const specializations = [
-    'CCTV Installation',
-    'DVR / NVR Setup',
-    'Networking',
-    'Maintenance',
-  ];
-
   const filteredTechnicians = useMemo(() => {
     return technicians.filter((tech) => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
+      if (technicianSearchQuery && technicianSearchQuery.trim()) {
+        const q = technicianSearchQuery.toLowerCase().trim();
         const matchesName = tech.name.toLowerCase().includes(q);
         const matchesPhone = tech.phone.toLowerCase().includes(q);
         const matchesId = tech.id.toLowerCase().includes(q);
         if (!matchesName && !matchesPhone && !matchesId) return false;
       }
-      if (specializationFilter && tech.specialization !== specializationFilter) return false;
-      if (statusFilter && tech.status !== statusFilter) return false;
+      if (technicianSpecializationFilter && tech.specialization !== technicianSpecializationFilter) return false;
       return true;
     });
-  }, [technicians, searchQuery, specializationFilter, statusFilter]);
+  }, [technicians, technicianSearchQuery, technicianSpecializationFilter]);
 
   const clearFilters = () => {
-    setSearchQuery('');
-    setSpecializationFilter('');
-    setStatusFilter('');
+    setTechnicianSearchQuery('');
+    setTechnicianSpecializationFilter('');
   };
 
   // Listen to Topbar Add Technician action
@@ -77,75 +69,24 @@ export const TechniciansPage = () => {
     <div className="space-y-6">
       {/* Main Table Card */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        {/* Filter Controls */}
-        <div className="p-4 border-b border-slate-200 bg-white flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Search by Technician Name or Phone Number"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-8 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={specializationFilter}
-              onChange={(e) => setSpecializationFilter(e.target.value)}
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Specialization: All</option>
-              {specializations.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">Status: All</option>
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
-
-            {(searchQuery || specializationFilter || statusFilter) && (
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors"
-              >
-                <X className="w-3.5 h-3.5" />
-                Clear
-              </button>
-            )}
-          </div>
-        </div>
-
         {/* Table */}
         <div className="overflow-x-auto">
           {filteredTechnicians.length === 0 ? (
             <EmptyState
               title="No technicians found"
-              description="Try adjusting your filters or search keywords."
-              actionLabel="Add Technician"
+              description={
+                technicianSearchQuery || technicianSpecializationFilter
+                  ? "Try adjusting your specialization filter or search keywords."
+                  : "Start by adding your first technician."
+              }
+              actionLabel={technicianSearchQuery || technicianSpecializationFilter ? "Clear Filters" : "Add Technician"}
               onAction={() => {
-                setTechnicianToEdit(null);
-                setIsModalOpen(true);
+                if (technicianSearchQuery || technicianSpecializationFilter) {
+                  clearFilters();
+                } else {
+                  setTechnicianToEdit(null);
+                  setIsModalOpen(true);
+                }
               }}
             />
           ) : (

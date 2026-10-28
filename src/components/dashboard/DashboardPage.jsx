@@ -16,25 +16,12 @@ import {
   ShieldAlert,
   ChevronRight,
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
 import { useApp } from '../../context/AppContext';
 import SummaryCard from '../common/SummaryCard';
 import StatusBadge from '../common/StatusBadge';
 import { formatDate, formatINR } from '../../utils/formatters';
 import EnquiryDetailsModal from '../enquiries/EnquiryDetailsModal';
 import AddEnquiryModal from '../enquiries/AddEnquiryModal';
-
-const PIPELINE_COLORS = ['#f59e0b', '#3b82f6', '#06b6d4', '#8b5cf6', '#10b981'];
 
 export const DashboardPage = () => {
   const { enquiries, metrics, quotations, orders, invoices, technicians } = useApp();
@@ -43,24 +30,6 @@ export const DashboardPage = () => {
 
   const [isAddEnquiryOpen, setIsAddEnquiryOpen] = useState(false);
   const [detailsEnquiryId, setDetailsEnquiryId] = useState(null);
-
-  // Workflow pipeline data for chart
-  const pipelineData = [
-    { name: 'Pending', value: enquiries.filter((e) => e.workflowStatus === 'Pending').length },
-    { name: 'Quotes Sent', value: enquiries.filter((e) => e.workflowStatus === 'Quotation Sent').length },
-    { name: 'Confirmed', value: enquiries.filter((e) => e.workflowStatus === 'Confirmed' || e.workflowStatus === 'Customer Approved').length },
-    { name: 'Ongoing', value: enquiries.filter((e) => e.workflowStatus === 'Ongoing').length },
-    { name: 'Completed', value: enquiries.filter((e) => e.workflowStatus === 'Completed').length },
-  ];
-
-  // Monthly trends dummy derived from actual data
-  const monthlyData = [
-    { month: 'Jun', enquiries: 4, jobs: 3 },
-    { month: 'Jul', enquiries: 6, jobs: 5 },
-    { month: 'Aug', enquiries: 7, jobs: 6 },
-    { month: 'Sep', enquiries: 9, jobs: 7 },
-    { month: 'Oct', enquiries: enquiries.length, jobs: orders.length },
-  ];
 
   // Upcoming site visits
   const upcomingVisits = enquiries
@@ -128,102 +97,6 @@ export const DashboardPage = () => {
           variant="slate"
           onClick={() => navigate('/workflow')}
         />
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        {/* Monthly Workflow Trend Bar Chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">
-                Monthly Enquiries & Completed Installations
-              </h3>
-              <p className="text-xs text-slate-500">Volume across current quarter</p>
-            </div>
-            <div className="flex items-center gap-3 text-xs">
-              <span className="flex items-center gap-1.5 text-blue-600 font-medium">
-                <span className="w-3 h-3 rounded-xs bg-blue-600 inline-block" /> Enquiries
-              </span>
-              <span className="flex items-center gap-1.5 text-emerald-600 font-medium">
-                <span className="w-3 h-3 rounded-xs bg-emerald-500 inline-block" /> Installations
-              </span>
-            </div>
-          </div>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#64748B' }} />
-                <YAxis tick={{ fontSize: 12, fill: '#64748B' }} allowDecimals={false} />
-                <Tooltip
-                  formatter={(value, name) => [value, name === 'enquiries' ? 'Enquiries' : 'Jobs']}
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    borderRadius: '8px',
-                    borderColor: '#e2e8f0',
-                    fontSize: '12px',
-                  }}
-                />
-                <Bar dataKey="enquiries" fill="#2563eb" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="jobs" fill="#10b981" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Workflow Stage Distribution Donut Chart */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">
-              Workflow Stage Breakdown
-            </h3>
-            <p className="text-xs text-slate-500 mb-2">Live pipeline distribution</p>
-            <div className="h-44 w-full relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pipelineData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={75}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {pipelineData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={PIPELINE_COLORS[index % PIPELINE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      borderRadius: '8px',
-                      borderColor: '#e2e8f0',
-                      fontSize: '12px',
-                    }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-xl font-bold text-slate-800">{enquiries.length}</span>
-                <span className="text-[10px] text-slate-400 uppercase font-semibold">Total</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 text-xs pt-3 border-t border-slate-100">
-            {pipelineData.map((d, i) => (
-              <div key={d.name} className="flex items-center gap-1.5 text-slate-600">
-                <div
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: PIPELINE_COLORS[i % PIPELINE_COLORS.length] }}
-                />
-                <span className="truncate">{d.name}:</span>
-                <span className="font-bold text-slate-900 ml-auto">{d.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       {/* Bottom Grid: Recent Enquiries, Upcoming Visits & Recent Activity */}

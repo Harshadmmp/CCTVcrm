@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar,
   Phone,
@@ -16,6 +16,8 @@ import {
   UserCheck,
   RefreshCw,
   XCircle,
+  Edit2,
+  Check,
 } from 'lucide-react';
 import Modal from '../common/Modal';
 import StatusBadge from '../common/StatusBadge';
@@ -37,9 +39,34 @@ export const EnquiryDetailsModal = ({
   onOpenCreateInvoice,
   onOpenPreviewInvoice,
 }) => {
-  const { enquiries, quotations, orders, invoices, recordCustomerDecision } = useApp();
+  const { enquiries, quotations, orders, invoices, recordCustomerDecision, updateEnquiry } = useApp();
 
   const enquiry = enquiries.find((e) => e.id === enquiryId);
+
+  const [isEditingCustomer, setIsEditingCustomer] = useState(false);
+  const [editForm, setEditForm] = useState({
+    customerName: '',
+    phone: '',
+    email: '',
+    siteAddress: '',
+    notes: '',
+  });
+  const [formErrors, setFormErrors] = useState({});
+
+  useEffect(() => {
+    if (isOpen && enquiry) {
+      setEditForm({
+        customerName: enquiry.customerName || '',
+        phone: (enquiry.phone || '').replace(/\D/g, '').slice(-10),
+        email: enquiry.email || '',
+        siteAddress: enquiry.siteAddress || '',
+        notes: enquiry.notes || '',
+      });
+      setIsEditingCustomer(false);
+      setFormErrors({});
+    }
+  }, [isOpen, enquiryId]);
+
   if (!enquiry) return null;
 
   const quotation = quotations.find((q) => q.id === enquiry.quotationId);
@@ -47,6 +74,36 @@ export const EnquiryDetailsModal = ({
   const invoice = invoices.find(
     (i) => i.enquiryId === enquiry.id || (order && i.orderId === order.id)
   );
+
+  const handleSaveCustomer = (e) => {
+    e.preventDefault();
+    const errs = {};
+    if (!editForm.customerName.trim()) {
+      errs.customerName = 'Customer name is required';
+    }
+    const cleanPhone = editForm.phone.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length !== 10) {
+      errs.phone = 'Phone number must be exactly 10 digits';
+    }
+    if (!editForm.siteAddress.trim()) {
+      errs.siteAddress = 'Installation site address is required';
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setFormErrors(errs);
+      return;
+    }
+
+    updateEnquiry(enquiry.id, {
+      customerName: editForm.customerName.trim(),
+      phone: cleanPhone,
+      email: editForm.email.trim(),
+      siteAddress: editForm.siteAddress.trim(),
+      notes: editForm.notes.trim(),
+    });
+    setIsEditingCustomer(false);
+    setFormErrors({});
+  };
 
   const isSiteVisitRequired =
     enquiry.requiresSiteVisit === true ||
@@ -232,10 +289,10 @@ export const EnquiryDetailsModal = ({
           <button
             type="button"
             onClick={() => onOpenWorkStatus(order)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 whitespace-nowrap cursor-pointer"
           >
-            <Wrench className="w-4 h-4" />
-            <span>Update Work Status</span>
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Complete Work</span>
           </button>
         );
 
@@ -244,10 +301,10 @@ export const EnquiryDetailsModal = ({
           <button
             type="button"
             onClick={() => onOpenWorkStatus(order)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 whitespace-nowrap"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-purple-500 whitespace-nowrap cursor-pointer"
           >
-            <Wrench className="w-4 h-4" />
-            <span>Update Work Status</span>
+            <CheckCircle2 className="w-4 h-4" />
+            <span>Complete Work</span>
           </button>
         );
 
@@ -298,7 +355,7 @@ export const EnquiryDetailsModal = ({
       onClose={onClose}
       title={`Enquiry Details: ${enquiry.id}`}
       subtitle={`${enquiry.customerName} • Created ${formatDate(enquiry.createdAt)}`}
-      maxWidth="max-w-4xl"
+      maxWidth="max-w-2xl"
       footer={
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between w-full gap-3 text-xs">
           <div className="flex items-center gap-2">
@@ -359,19 +416,155 @@ export const EnquiryDetailsModal = ({
           </div>
         </div>
 
-        {/* Clean 2-Column Dashboard Cards with Equal Height */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch">
-          {/* Card 1: Customer & Site Details */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-2xs">
-            <div className="space-y-3.5">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                  <User className="w-4 h-4 text-blue-600" />
-                  <span>Customer & Site Details</span>
-                </h4>
+        {/* Customer & Site Details Card */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-2xs space-y-3.5">
+          <div className="space-y-3.5">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <User className="w-4 h-4 text-blue-600" />
+                <span>Customer & Site Details</span>
+              </h4>
+              <div className="flex items-center gap-2">
+                {!isEditingCustomer && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditForm({
+                        customerName: enquiry.customerName || '',
+                        phone: (enquiry.phone || '').replace(/\D/g, '').slice(-10),
+                        email: enquiry.email || '',
+                        siteAddress: enquiry.siteAddress || '',
+                        notes: enquiry.notes || '',
+                      });
+                      setFormErrors({});
+                      setIsEditingCustomer(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors cursor-pointer"
+                    title="Edit Customer Information"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    <span>Edit Customer</span>
+                  </button>
+                )}
                 <StatusBadge status={enquiry.workflowStatus} />
               </div>
+            </div>
 
+            {isEditingCustomer ? (
+              <form onSubmit={handleSaveCustomer} className="space-y-3 text-xs">
+                {/* Customer Name */}
+                <div>
+                  <label className="text-slate-500 font-semibold block text-[11px] uppercase tracking-wider mb-1">
+                    Customer Name <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editForm.customerName}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, customerName: e.target.value }))}
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.customerName ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300'
+                    }`}
+                    placeholder="Enter customer name"
+                  />
+                  {formErrors.customerName && (
+                    <p className="mt-1 text-[11px] text-rose-500 font-medium">{formErrors.customerName}</p>
+                  )}
+                </div>
+
+                {/* Phone & Email (2-col grid) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-slate-500 font-semibold block text-[11px] uppercase tracking-wider mb-1">
+                      Phone Number (10 digits) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      value={editForm.phone}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+                        setEditForm((prev) => ({ ...prev, phone: val }));
+                      }}
+                      className={`w-full px-3 py-1.5 rounded-lg border text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        formErrors.phone ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300'
+                      }`}
+                      placeholder="9876543210"
+                    />
+                    {formErrors.phone && (
+                      <p className="mt-1 text-[11px] text-rose-500 font-medium">{formErrors.phone}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-slate-500 font-semibold block text-[11px] uppercase tracking-wider mb-1">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, email: e.target.value }))}
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="customer@example.com"
+                    />
+                  </div>
+                </div>
+
+                {/* Installation Site Address & Notes (2-col grid) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-slate-500 font-semibold block text-[11px] uppercase tracking-wider mb-1">
+                      Installation Site Address <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editForm.siteAddress}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, siteAddress: e.target.value }))}
+                      className={`w-full px-3 py-1.5 rounded-lg border text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        formErrors.siteAddress ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300'
+                      }`}
+                      placeholder="Shop/Flat No., Building, Street, City"
+                    />
+                    {formErrors.siteAddress && (
+                      <p className="mt-1 text-[11px] text-rose-500 font-medium">{formErrors.siteAddress}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-slate-500 font-semibold block text-[11px] uppercase tracking-wider mb-1">
+                      Enquiry Notes / Requirements
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={editForm.notes}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, notes: e.target.value }))}
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Customer specific notes or requirements"
+                    />
+                  </div>
+                </div>
+
+                {/* Action Buttons: Save & Cancel */}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsEditingCustomer(false);
+                      setFormErrors({});
+                    }}
+                    className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Save Changes</span>
+                  </button>
+                </div>
+              </form>
+            ) : (
               <div className="space-y-3 text-xs">
                 <div>
                   <span className="text-slate-400 font-medium block text-[11px] uppercase tracking-wider">
@@ -410,17 +603,29 @@ export const EnquiryDetailsModal = ({
                   </div>
                 </div>
 
-                <div>
-                  <span className="text-slate-400 font-medium block text-[11px] uppercase tracking-wider">
-                    Installation Site Address
-                  </span>
-                  <p className="font-medium text-slate-800 flex items-start gap-1.5 mt-0.5 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
-                    <span className="leading-relaxed">{enquiry.siteAddress}</span>
-                  </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-slate-400 font-medium block text-[11px] uppercase tracking-wider">
+                      Installation Site Address
+                    </span>
+                    <p className="font-semibold text-slate-800 flex items-start gap-1.5 mt-0.5">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
+                      <span className="leading-relaxed">{enquiry.siteAddress}</span>
+                    </p>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-400 font-medium block text-[11px] uppercase tracking-wider">
+                      Enquiry Notes / Requirements
+                    </span>
+                    <p className="font-semibold text-slate-800 mt-0.5 leading-relaxed whitespace-pre-wrap">
+                      {enquiry.notes || '—'}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+          </div>
 
             {enquiry.cameraCount && (
               <div className="mt-3.5 flex items-center justify-between bg-blue-50/70 border border-blue-200/70 rounded-lg px-3 py-2">
@@ -434,213 +639,6 @@ export const EnquiryDetailsModal = ({
               </div>
             )}
           </div>
-
-          {/* Card 2: Workflow Stage & Operational Records */}
-          <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-2xs">
-            <div className="space-y-3.5">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-blue-600" />
-                  <span>Workflow Stage & Records</span>
-                </h4>
-                <span className="text-[11px] text-slate-500 font-medium">
-                  {stages.filter((s) => s.done).length} of {stages.length} Milestones Done
-                </span>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                {/* Site Visit Record */}
-                <div className="p-3 rounded-lg border border-slate-200 bg-slate-50 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                      Site Visit Status
-                    </span>
-                    <div className="flex items-center gap-2">
-                      {enquiry.siteVisit ? (
-                        <StatusBadge status={enquiry.siteVisit.status} size="xs" />
-                      ) : !isSiteVisitRequired ? (
-                        <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                          Not Required (Direct Quotation)
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                          Not Scheduled
-                        </span>
-                      )}
-                      {enquiry.siteVisit && (
-                        <button
-                          type="button"
-                          onClick={() => onOpenSiteVisit(enquiry)}
-                          title="Edit Site Visit"
-                          className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
-                        >
-                          Edit
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {enquiry.siteVisit ? (
-                    <div className="space-y-2 pt-1">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-slate-700">
-                        <div>
-                          <span className="text-slate-400 block text-[10px] uppercase font-medium">Visit Date</span>
-                          <span className="font-semibold text-slate-800">{formatDate(enquiry.siteVisit.visitDate)}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block text-[10px] uppercase font-medium">Time Slot</span>
-                          <span className="font-semibold text-slate-800">{enquiry.siteVisit.visitTime || '10:00 AM'}</span>
-                        </div>
-                        <div>
-                          <span className="text-slate-400 block text-[10px] uppercase font-medium">Assigned Tech</span>
-                          <span className="font-semibold text-slate-800 flex items-center gap-1 truncate" title={enquiry.siteVisit.staffOrTechName || enquiry.technicianName || 'Pending'}>
-                            <UserCheck className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
-                            <span className="truncate">{enquiry.siteVisit.staffOrTechName || enquiry.technicianName || 'Ramesh Kumar'}</span>
-                          </span>
-                        </div>
-                      </div>
-                      {enquiry.siteVisit.notes && (
-                        <div className="pt-1.5 border-t border-slate-200/80">
-                          <span className="text-slate-400 block text-[10px] uppercase font-medium">Visit Notes</span>
-                          <p className="text-slate-700 italic text-[11px] mt-0.5">{enquiry.siteVisit.notes}</p>
-                        </div>
-                      )}
-                      {enquiry.siteVisit.status === 'Completed' && !quotation && (
-                        <div className="mt-2 p-2 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
-                          <span className="text-emerald-800 font-semibold flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                            Survey Completed
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => onOpenQuotation(enquiry)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-2xs transition-colors cursor-pointer"
-                          >
-                            <FileText className="w-3 h-3" />
-                            Create Quote
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ) : !isSiteVisitRequired ? (
-                    <p className="text-[11px] text-slate-500">
-                      Client does not require an on-site survey. Direct quotation path is active.
-                    </p>
-                  ) : (
-                    <p className="text-[11px] text-slate-500">
-                      No site visit scheduled yet. Click below or in the footer to schedule a physical survey.
-                    </p>
-                  )}
-                </div>
-
-              {/* Quotation Record */}
-              {quotation ? (
-                <div className="p-3 rounded-lg border border-blue-200 bg-blue-50/50 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-blue-950 flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-blue-600" />
-                      Quotation: {quotation.id}
-                    </span>
-                    <StatusBadge status={quotation.status} size="xs" />
-                  </div>
-                  <div className="flex items-center justify-between pt-1">
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase">Grand Total (GST Inc.)</span>
-                      <span className="font-bold text-blue-700 text-sm">{formatINR(quotation.grandTotal)}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onOpenPreviewQuotation(quotation)}
-                      className="px-2.5 py-1 text-[11px] font-semibold text-blue-700 bg-white hover:bg-blue-100/60 border border-blue-300 rounded shadow-2xs transition-colors cursor-pointer"
-                    >
-                      Preview Quote
-                    </button>
-                  </div>
-                  {quotation.status === 'Sent' && (
-                    <div className="flex items-center justify-between pt-2 border-t border-blue-200/60 text-[11px]">
-                      <span className="text-slate-500 font-medium">Customer Feedback:</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onOpenQuotation(enquiry, quotation)}
-                          className="text-amber-700 hover:text-amber-900 font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
-                          title="Customer requested changes in camera count, pricing, or specifications"
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                          Revise Quote
-                        </button>
-                        <span className="text-slate-300">•</span>
-                        <button
-                          type="button"
-                          onClick={() => onOpenDecision(quotation, 'Declined')}
-                          className="text-rose-600 hover:text-rose-800 font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
-                          title="Customer declined or chose another vendor"
-                        >
-                          <XCircle className="w-3 h-3" />
-                          Customer Declined
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : null}
-
-              {/* Order & Technician Record */}
-              {order ? (
-                <div className="p-3 rounded-lg border border-purple-200 bg-purple-50/50 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-purple-950 flex items-center gap-1.5">
-                      <Wrench className="w-3.5 h-3.5 text-purple-600" />
-                      Work Order: {order.id}
-                    </span>
-                    <StatusBadge status={order.workStatus} size="xs" />
-                  </div>
-                  <div className="flex items-center justify-between pt-1">
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase">Assigned Technician</span>
-                      <span className="font-semibold text-slate-800">
-                        {order.technicianName || 'Pending Assignment'}
-                      </span>
-                    </div>
-                    {order.technicianName && (
-                      <span className="text-[11px] text-purple-700 font-semibold bg-purple-100 px-2 py-0.5 rounded">
-                        Field Engineer
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ) : null}
-
-              {/* Invoice Record */}
-              {invoice ? (
-                <div className="p-3 rounded-lg border border-violet-200 bg-violet-50/50 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-violet-950 flex items-center gap-1.5">
-                      <Receipt className="w-3.5 h-3.5 text-violet-600" />
-                      Tax Invoice: {invoice.id}
-                    </span>
-                    <StatusBadge status={invoice.status} size="xs" />
-                  </div>
-                  <div className="flex items-center justify-between pt-1">
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase">Invoice Total</span>
-                      <span className="font-bold text-violet-800 text-sm">{formatINR(invoice.grandTotal)}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onOpenPreviewInvoice(invoice)}
-                      className="px-2.5 py-1 text-[11px] font-semibold text-violet-700 bg-white hover:bg-violet-100/60 border border-violet-300 rounded shadow-2xs transition-colors"
-                    >
-                      View Invoice
-                    </button>
-                  </div>
-                </div>
-              ) : null}
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Follow-up History (if any recorded) */}
         {enquiry.followUps && enquiry.followUps.length > 0 && (
