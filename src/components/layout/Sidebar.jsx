@@ -13,6 +13,8 @@ import {
   Wrench,
   ShieldCheck,
   User,
+  Settings,
+  KeyRound,
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 
@@ -25,6 +27,7 @@ export const Sidebar = ({ isOpen, onToggle, onClose }) => {
   const navItems = isTech
     ? [
         { name: 'My Assigned Tasks', path: '/technician-portal', icon: Wrench },
+        { name: 'Change Password', path: '/settings', icon: KeyRound },
       ]
     : [
         { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -33,6 +36,7 @@ export const Sidebar = ({ isOpen, onToggle, onClose }) => {
         { name: 'Technicians', path: '/technicians', icon: Users },
         { name: 'Reports', path: '/reports', icon: BarChart3 },
         { name: 'Technician Tasks', path: '/technician-portal', icon: Wrench },
+        { name: 'Settings', path: '/settings', icon: Settings },
       ];
 
   return (
@@ -136,7 +140,11 @@ export const Sidebar = ({ isOpen, onToggle, onClose }) => {
         <div className={`border-t border-blue-900/60 bg-[#121d42] ${isOpen ? 'p-3' : 'p-2'}`}>
           {isOpen ? (
             <div className="flex items-center justify-between gap-2 px-2.5 py-2 bg-blue-950/70 rounded-lg border border-blue-900/50">
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <NavLink
+                to="/settings"
+                title={currentUser?.role === 'admin' ? 'Open Account Settings' : 'Change My Password'}
+                className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-85 transition-opacity"
+              >
                 <div className="w-7 h-7 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">
                   {currentUser?.name ? currentUser.name.charAt(0) : 'U'}
                 </div>
@@ -150,7 +158,7 @@ export const Sidebar = ({ isOpen, onToggle, onClose }) => {
                       : currentUser?.specialization || 'Technician'}
                   </span>
                 </div>
-              </div>
+              </NavLink>
               <button
                 type="button"
                 onClick={() => setShowLogoutConfirm(true)}

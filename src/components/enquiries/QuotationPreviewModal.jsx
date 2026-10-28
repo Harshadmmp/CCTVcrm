@@ -22,7 +22,7 @@ export const QuotationPreviewModal = ({
   onOpenCustomerDecision,
   onOpenCreateOrder,
 }) => {
-  const { addToast, recordCustomerDecision } = useApp();
+  const { addToast, recordCustomerDecision, createOrderFromQuotation } = useApp();
   const [showWhatsAppNotice, setShowWhatsAppNotice] = useState(false);
 
   if (!quotation) return null;
@@ -90,11 +90,8 @@ export const QuotationPreviewModal = ({
               <button
                 type="button"
                 onClick={() => {
-                  recordCustomerDecision(quotation.id, 'Approved', 'Approved by customer (On-call / In-person)');
-                  if (onOpenCreateOrder) {
-                    onOpenCreateOrder({ ...quotation, status: 'Approved' });
-                    onClose();
-                  }
+                  createOrderFromQuotation(quotation.id);
+                  onClose();
                 }}
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors cursor-pointer"
               >

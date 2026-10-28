@@ -8,6 +8,7 @@ import ProductsPage from './components/products/ProductsPage';
 import TechniciansPage from './components/technicians/TechniciansPage';
 import ReportsPage from './components/reports/ReportsPage';
 import TechnicianTasksPage from './components/technician-portal/TechnicianTasksPage';
+import SettingsPage from './components/settings/SettingsPage';
 import LoginPage from './components/auth/LoginPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
@@ -34,6 +35,7 @@ export function App() {
             <Route path="technicians" element={<TechniciansPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="technician-portal" element={<TechnicianTasksPage />} />
+            <Route path="settings" element={<SettingsPage />} />
             {/* Catch-all redirect to dashboard */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

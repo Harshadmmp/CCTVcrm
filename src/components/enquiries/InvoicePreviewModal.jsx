@@ -1,11 +1,11 @@
 import React from 'react';
-import { Printer, CheckCircle2, Send, AlertCircle, FileText } from 'lucide-react';
+import { Printer, CheckCircle2, Send, AlertCircle, FileText, Share2 } from 'lucide-react';
 import Modal from '../common/Modal';
 import { formatINR, formatDate } from '../../utils/formatters';
 import { useApp } from '../../context/AppContext';
 
 export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
-  const { reviewInvoice, sendInvoice, invoices } = useApp();
+  const { reviewInvoice, sendInvoice, invoices, addToast } = useApp();
 
   // Keep live status in sync with application state if invoice already exists
   const liveInvoice = invoices.find((i) => i.id === invoice?.id) || invoice;
@@ -18,6 +18,22 @@ export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleWhatsAppShare = () => {
+    const rawPhone = liveInvoice.customerPhone ? liveInvoice.customerPhone.replace(/\D/g, '') : '';
+    const cleanPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+    const message = `Hello ${liveInvoice.customerName}, here is your Tax Invoice (${liveInvoice.id}) from SecureEye CCTV Solutions.\nOrder Ref: ${liveInvoice.orderId || 'CCTV Installation'}\nInvoice Date: ${formatDate(liveInvoice.invoiceDate)}\nDue Date: ${formatDate(liveInvoice.dueDate)}\nTotal Amount: ${formatINR(liveInvoice.grandTotal)} (Inclusive of applicable GST).\nThank you for choosing SecureEye CCTV Solutions!`;
+    const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    if (addToast) {
+      addToast(
+        'WhatsApp Action Triggered',
+        `Opened WhatsApp dispatch link for invoice ${liveInvoice.id}.`,
+        'info'
+      );
+    }
   };
 
   const handleMarkAsReviewed = () => {
@@ -62,17 +78,26 @@ export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
             <button
               type="button"
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               Print / Save PDF
+            </button>
+
+            <button
+              type="button"
+              onClick={handleWhatsAppShare}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+              Send via WhatsApp
             </button>
 
             {!isReviewed && !isDraftOnly && (
               <button
                 type="button"
                 onClick={handleMarkAsReviewed}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-lg transition-colors cursor-pointer"
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 Mark as Reviewed
@@ -85,7 +110,7 @@ export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
                 onClick={handleSendInvoice}
                 disabled={!isReviewed}
                 title={!isReviewed ? 'Review required before sending' : 'Send invoice to customer'}
-                className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white rounded-lg shadow-sm transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white rounded-lg shadow-sm transition-colors cursor-pointer ${
                   !isReviewed
                     ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
                     : 'bg-emerald-600 hover:bg-emerald-700'

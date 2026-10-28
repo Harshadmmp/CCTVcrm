@@ -5,7 +5,7 @@ import { formatINR } from '../../utils/formatters';
 import { useApp } from '../../context/AppContext';
 
 export const CreateOrderModal = ({ isOpen, onClose, quotation }) => {
-  const { createOrderFromQuotation } = useApp();
+  const { createOrderFromQuotation, recordCustomerDecision } = useApp();
 
   if (!quotation) return null;
 
@@ -18,7 +18,7 @@ export const CreateOrderModal = ({ isOpen, onClose, quotation }) => {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      zIndex="z-[60]"
+      zIndex="z-[80]"
       title="Create Order from Approved Quotation"
       subtitle={`Source Quotation: ${quotation.id} • Customer: ${quotation.customerName}`}
       maxWidth="max-w-xl"

@@ -24,6 +24,7 @@ export const EnquiryWorkbench = () => {
     invoices,
     activeWorkflowTab,
     workflowSearchQuery,
+    createOrderFromQuotation,
   } = useApp();
 
   // Modal States
@@ -95,7 +96,12 @@ export const EnquiryWorkbench = () => {
             setDecisionQuotation(q);
             setDecisionInitial(initial);
           }}
-          onOpenCreateOrder={(q) => setOrderQuotation(q)}
+          onOpenCreateOrder={(q) => {
+            if (q?.id) {
+              createOrderFromQuotation(q.id);
+            }
+            setDetailsEnquiryId(null);
+          }}
           onOpenAssignTechnician={(ord) => setTechnicianOrder(ord)}
           onOpenWorkStatus={(ord) => setWorkStatusOrder(ord)}
           onOpenFollowUp={(enq) => setFollowUpEnquiry(enq)}
@@ -122,7 +128,12 @@ export const EnquiryWorkbench = () => {
             setDecisionQuotation(q);
             setDecisionInitial(initial);
           }}
-          onOpenCreateOrder={(q) => setOrderQuotation(q)}
+          onOpenCreateOrder={(q) => {
+            if (q?.id) {
+              createOrderFromQuotation(q.id);
+            }
+            setDetailsEnquiryId(null);
+          }}
           onOpenAssignTechnician={(ord) => setTechnicianOrder(ord)}
           onOpenWorkStatus={(ord) => setWorkStatusOrder(ord)}
           onOpenFollowUp={(enq) => setFollowUpEnquiry(enq)}
@@ -180,7 +191,9 @@ export const EnquiryWorkbench = () => {
             setPreviewQuotation(null);
           }}
           onOpenCreateOrder={(q) => {
-            setOrderQuotation(q);
+            if (q?.id) {
+              createOrderFromQuotation(q.id);
+            }
             setPreviewQuotation(null);
           }}
         />

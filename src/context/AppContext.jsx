@@ -140,6 +140,129 @@ export const AppProvider = ({ children }) => {
     }
   });
 
+  // Admin Account & System Settings state
+  const defaultAdminSettings = {
+    username: 'admin',
+    name: 'Office Admin',
+    email: 'admin@securevision.in',
+    phone: '+91 98100 12345',
+    password: 'admin123',
+    companyName: 'SecureVision CCTV Systems',
+    companyPhone: '+91 98100 12345',
+    companyEmail: 'contact@securevision.in',
+    companyAddress: 'Sector 18, Commercial Plaza, Gurugram 122001',
+    gstin: '06AAAAA0000A1Z5',
+    defaultGstRate: 18,
+    quotationValidityDays: 30,
+    quotationTerms: '1. Prices are all-inclusive of applicable GST.\n2. 50% advance along with work order, remaining 50% upon installation sign-off.\n3. 1-Year on-site warranty on all cameras and recording equipment.\n4. Free mobile view app configuration and staff training included.',
+  };
+
+  const [adminSettings, setAdminSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cctv_admin_settings');
+      if (saved) {
+        return { ...defaultAdminSettings, ...JSON.parse(saved) };
+      }
+      return defaultAdminSettings;
+    } catch (e) {
+      console.error('Error reading admin settings from localStorage', e);
+      return defaultAdminSettings;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('cctv_admin_settings', JSON.stringify(adminSettings));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [adminSettings]);
+
+  const updateAdminSettings = (newSettings) => {
+    setAdminSettings((prev) => {
+      const updated = { ...prev, ...newSettings };
+      try {
+        localStorage.setItem('cctv_admin_settings', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+
+    if (currentUser?.role === 'admin') {
+      setCurrentUser((prev) => {
+        const updatedUser = {
+          ...prev,
+          name: newSettings.name !== undefined ? newSettings.name : prev.name,
+          username: newSettings.username !== undefined ? newSettings.username : prev.username,
+          email: newSettings.email !== undefined ? newSettings.email : prev.email,
+          phone: newSettings.phone !== undefined ? newSettings.phone : prev.phone,
+        };
+        try {
+          localStorage.setItem('cctv_auth_user', JSON.stringify(updatedUser));
+        } catch (e) {
+          console.error(e);
+        }
+        return updatedUser;
+      });
+    }
+
+    addToast('Settings Saved', 'Admin settings updated successfully.', 'success');
+  };
+
+  const changeAdminPassword = (newPassword) => {
+    if (!newPassword || newPassword.trim().length < 4) {
+      return { success: false, message: 'New password must be at least 4 characters.' };
+    }
+
+    setAdminSettings((prev) => {
+      const updated = { ...prev, password: newPassword.trim() };
+      try {
+        localStorage.setItem('cctv_admin_settings', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+
+    addToast('Password Changed', 'Admin password changed successfully. Use your new password on next login.', 'success');
+    return { success: true };
+  };
+
+  const updateTechnicianPassword = (techId, newPassword) => {
+    if (!techId || !newPassword || newPassword.trim().length < 4) {
+      return { success: false, message: 'New password must be at least 4 characters.' };
+    }
+
+    setTechnicians((prev) => {
+      const updated = prev.map((t) => {
+        if (t.id === techId) {
+          return { ...t, password: newPassword.trim() };
+        }
+        return t;
+      });
+      try {
+        localStorage.setItem('cctv_technicians', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+
+    if (currentUser?.role === 'technician' && currentUser?.id === techId) {
+      const updatedUser = { ...currentUser, password: newPassword.trim() };
+      setCurrentUser(updatedUser);
+      try {
+        localStorage.setItem('cctv_auth_user', JSON.stringify(updatedUser));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    addToast('Password Changed', 'Your password has been changed successfully. Use your new password on next login.', 'success');
+    return { success: true };
+  };
+
   // Toast notifications state
   const [toasts, setToasts] = useState([]);
 
@@ -261,25 +384,36 @@ export const AppProvider = ({ children }) => {
     const passDigits = cleanDigits(rawPass);
 
     // 1. Check Admin login
-    if (
-      cleanId === 'admin' ||
-      cleanId === 'admin@securevision.in' ||
-      cleanId === 'oa' ||
-      cleanId === 'admin@cctv.com'
-    ) {
+    const validAdminUsernames = [
+      'admin',
+      'admin@securevision.in',
+      'oa',
+      'admin@cctv.com',
+      (adminSettings?.username || '').toLowerCase().trim(),
+      (adminSettings?.email || '').toLowerCase().trim(),
+    ].filter(Boolean);
+
+    const validAdminPasswords = [
+      'admin',
+      'admin123',
+      'admin@123',
+      'password',
+      adminSettings?.password,
+    ].filter(Boolean);
+
+    if (validAdminUsernames.includes(cleanId)) {
       if (
-        rawPass === 'admin' ||
-        rawPass === 'admin123' ||
-        rawPass === 'admin@123' ||
+        validAdminPasswords.includes(rawPass) ||
         passDigits === '9810012345' ||
-        rawPass === 'password'
+        (adminSettings?.phone && cleanDigits(adminSettings.phone) === passDigits)
       ) {
         const adminUser = {
           role: 'admin',
           id: 'ADMIN-01',
-          name: 'Office Admin',
-          email: 'admin@securevision.in',
-          phone: '+91 98100 12345',
+          name: adminSettings?.name || 'Office Admin',
+          username: adminSettings?.username || 'admin',
+          email: adminSettings?.email || 'admin@securevision.in',
+          phone: adminSettings?.phone || '+91 98100 12345',
         };
         setCurrentUser(adminUser);
         try {
@@ -290,26 +424,39 @@ export const AppProvider = ({ children }) => {
         addToast('Welcome Back', 'Logged in successfully as Administrator.', 'success');
         return { success: true, user: adminUser };
       } else {
-        return { success: false, message: 'Invalid Admin password. Use "admin123".' };
+        return { success: false, message: 'Invalid Admin password.' };
       }
     }
 
-    // 2. Check Technician login (email as username, phone number as password)
+    // 2. Check Technician login (email, ID, or phone number as identifier)
     const tech = technicians.find((t) => {
-      const tEmail = (t.email || '').toLowerCase();
-      const tId = (t.id || '').toLowerCase();
+      const tEmail = (t.email || '').toLowerCase().trim();
+      const tId = (t.id || '').toLowerCase().trim();
       const tPhoneDigits = cleanDigits(t.phone);
-      return tEmail === cleanId || tId === cleanId || (cleanDigits(rawId) && tPhoneDigits === cleanDigits(rawId));
+      return (
+        tEmail === cleanId ||
+        tId === cleanId ||
+        (cleanDigits(rawId) && tPhoneDigits === cleanDigits(rawId))
+      );
     });
 
     if (tech) {
       const tPhoneDigits = cleanDigits(tech.phone);
-      if (
-        (passDigits && passDigits === tPhoneDigits) ||
-        rawPass === tech.phone ||
-        rawPass === 'admin123' ||
-        rawPass === 'tech123'
-      ) {
+      const hasCustomPass = Boolean(tech.password && tech.password.trim());
+
+      let isPasswordMatch = false;
+      if (hasCustomPass) {
+        // Technician updated their password: ONLY allow their updated password
+        isPasswordMatch = rawPass === tech.password.trim();
+      } else {
+        // Initial default: phone number or tech123
+        isPasswordMatch =
+          (passDigits && passDigits === tPhoneDigits) ||
+          rawPass === tech.phone ||
+          rawPass === 'tech123';
+      }
+
+      if (isPasswordMatch) {
         const techUser = {
           role: 'technician',
           ...tech,
@@ -325,7 +472,9 @@ export const AppProvider = ({ children }) => {
       } else {
         return {
           success: false,
-          message: `Incorrect password. For technicians, your default password is your phone number (${tech.phone}).`,
+          message: hasCustomPass
+            ? 'Incorrect password. Please enter your updated password.'
+            : `Incorrect password. Your default password is your phone number (${tech.phone}).`,
         };
       }
     }
@@ -567,6 +716,7 @@ export const AppProvider = ({ children }) => {
           if (enq.id !== targetEnquiryId) return enq;
           return {
             ...enq,
+            quotationId: quotationId,
             workflowStatus: 'Quotation Sent',
             workStatusHistory: [
               ...(enq.workStatusHistory || []),
@@ -656,14 +806,9 @@ export const AppProvider = ({ children }) => {
 
   // 7. Create Order from Approved Quotation
   const createOrderFromQuotation = (quotationId) => {
-    const quot = quotations.find((q) => q.id === quotationId);
+    const quot = quotations.find((q) => q.id === quotationId || q.enquiryId === quotationId);
     if (!quot) {
       addToast('Error', 'Quotation not found', 'error');
-      return null;
-    }
-
-    if (quot.status !== 'Approved') {
-      addToast('Approval Required', 'Cannot create order until customer explicitly approves the quotation.', 'error');
       return null;
     }
 
@@ -703,9 +848,9 @@ export const AppProvider = ({ children }) => {
 
     setOrders((prev) => [newOrder, ...prev]);
 
-    // Mark quotation as order created
+    // Mark quotation as approved and order created
     setQuotations((prev) =>
-      prev.map((q) => (q.id === quotationId ? { ...q, isOrderCreated: true } : q))
+      prev.map((q) => (q.id === quot.id ? { ...q, status: 'Approved', isOrderCreated: true } : q))
     );
 
     // Update enquiry
@@ -715,6 +860,7 @@ export const AppProvider = ({ children }) => {
         return {
           ...enq,
           orderId: orderId,
+          quotationId: quot.id,
           workflowStatus: 'Confirmed',
           workStatusHistory: [
             ...(enq.workStatusHistory || []),
@@ -1097,6 +1243,10 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider
       value={{
         currentUser,
+        adminSettings,
+        updateAdminSettings,
+        changeAdminPassword,
+        updateTechnicianPassword,
         login,
         logout,
         completeSiteSurvey,

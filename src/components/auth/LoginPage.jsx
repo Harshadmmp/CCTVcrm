@@ -18,7 +18,7 @@ import { useApp } from '../../context/AppContext';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const { login, technicians } = useApp();
+  const { login, technicians, adminSettings } = useApp();
 
   const [activeTab, setActiveTab] = useState('admin'); // 'admin' | 'technician'
   const [identifier, setIdentifier] = useState('');
@@ -32,8 +32,8 @@ export const LoginPage = () => {
     setActiveTab(tab);
     setError('');
     if (tab === 'admin') {
-      setIdentifier('admin@securevision.in');
-      setPassword('admin123');
+      setIdentifier(adminSettings?.email || adminSettings?.username || 'admin@securevision.in');
+      setPassword(adminSettings?.password || 'admin123');
     } else {
       const defaultTech = technicians[0] || {
         email: 'ramesh.tech@securevision.in',
@@ -250,16 +250,20 @@ export const LoginPage = () => {
                 <button
                   type="button"
                   onClick={() =>
-                    handleQuickLogin('admin', 'admin@securevision.in', 'admin123')
+                    handleQuickLogin(
+                      'admin',
+                      adminSettings?.email || adminSettings?.username || 'admin@securevision.in',
+                      adminSettings?.password || 'admin123'
+                    )
                   }
                   className="p-2 rounded-lg border border-slate-200 hover:border-blue-400 hover:bg-blue-50/60 text-left transition-all group cursor-pointer"
                 >
                   <div className="flex items-center gap-1.5 font-semibold text-slate-900 group-hover:text-blue-700">
                     <Shield className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Office Admin</span>
+                    <span>{adminSettings?.name || 'Office Admin'}</span>
                   </div>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                    admin@securevision.in
+                  <span className="text-[10px] text-slate-400 block mt-0.5 truncate">
+                    {adminSettings?.username ? `@${adminSettings.username}` : (adminSettings?.email || 'admin@securevision.in')}
                   </span>
                 </button>
 
@@ -270,7 +274,7 @@ export const LoginPage = () => {
                     handleQuickLogin(
                       'technician',
                       technicians[0]?.email || 'ramesh.tech@securevision.in',
-                      technicians[0]?.phone || '+91 98112 34567'
+                      technicians[0]?.password || technicians[0]?.phone || '+91 98112 34567'
                     )
                   }
                   className="p-2 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/60 text-left transition-all group cursor-pointer"
@@ -280,7 +284,7 @@ export const LoginPage = () => {
                     <span>{technicians[0]?.name || 'Ramesh Kumar (Tech)'}</span>
                   </div>
                   <span className="text-[10px] text-slate-400 block mt-0.5">
-                    Pass: {technicians[0]?.phone || '9811234567'}
+                    Pass: {technicians[0]?.password ? '••••••••' : (technicians[0]?.phone || '9811234567')}
                   </span>
                 </button>
 
@@ -292,7 +296,7 @@ export const LoginPage = () => {
                       handleQuickLogin(
                         'technician',
                         technicians[1].email,
-                        technicians[1].phone
+                        technicians[1].password || technicians[1].phone
                       )
                     }
                     className="p-2 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/60 text-left transition-all group cursor-pointer"
@@ -302,7 +306,7 @@ export const LoginPage = () => {
                       <span>{technicians[1].name}</span>
                     </div>
                     <span className="text-[10px] text-slate-400 block mt-0.5">
-                      Pass: {technicians[1].phone}
+                      Pass: {technicians[1].password ? '••••••••' : technicians[1].phone}
                     </span>
                   </button>
                 )}
@@ -315,7 +319,7 @@ export const LoginPage = () => {
                       handleQuickLogin(
                         'technician',
                         technicians[2].email,
-                        technicians[2].phone
+                        technicians[2].password || technicians[2].phone
                       )
                     }
                     className="p-2 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50/60 text-left transition-all group cursor-pointer"
@@ -325,7 +329,7 @@ export const LoginPage = () => {
                       <span>{technicians[2].name}</span>
                     </div>
                     <span className="text-[10px] text-slate-400 block mt-0.5">
-                      Pass: {technicians[2].phone}
+                      Pass: {technicians[2].password ? '••••••••' : technicians[2].phone}
                     </span>
                   </button>
                 )}

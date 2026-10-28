@@ -44,7 +44,9 @@ export const EnquiryTable = ({
   const showAction = activeTab !== 'All';
 
   const renderRowAction = (enquiry) => {
-    const quotation = quotations.find((q) => q.id === enquiry.quotationId);
+    const quotation = quotations.find(
+      (q) => (enquiry.quotationId && q.id === enquiry.quotationId) || q.enquiryId === enquiry.id
+    );
     const order = orders.find((o) => o.id === enquiry.orderId);
     const invoice = invoices?.find(
       (i) => i.enquiryId === enquiry.id || (order && i.orderId === order.id)
@@ -95,19 +97,10 @@ export const EnquiryTable = ({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              if (quotation) {
-                if (quotation.status !== 'Approved') {
-                  recordCustomerDecision?.(
-                    quotation.id,
-                    'Approved',
-                    'Approved by customer (On-call / In-person)'
-                  );
-                }
-                onOpenCreateOrder?.({ ...quotation, status: 'Approved' });
-              }
+              onOpenDetails?.(enquiry);
             }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
-            title="Approve quotation & create work order"
+            title="Open enquiry details & approve or revise quotation"
           >
             <PackageCheck className="w-3.5 h-3.5" />
             <span>Approve & Order</span>
@@ -120,7 +113,7 @@ export const EnquiryTable = ({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              onOpenCreateOrder?.(quotation);
+              onOpenDetails?.(enquiry);
             }}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
           >
@@ -235,7 +228,9 @@ export const EnquiryTable = ({
         </thead>
         <tbody className="divide-y divide-slate-100 bg-white">
           {enquiries.map((enquiry, index) => {
-            const quotation = quotations.find((q) => q.id === enquiry.quotationId);
+            const quotation = quotations.find(
+              (q) => (enquiry.quotationId && q.id === enquiry.quotationId) || q.enquiryId === enquiry.id
+            );
             const order = orders.find((o) => o.id === enquiry.orderId);
             const displayTotal = order?.grandTotal || quotation?.grandTotal || null;
 
@@ -305,7 +300,10 @@ export const EnquiryTable = ({
 
                 {/* 6. Action Button (Hidden on 'All' tab, visible on remaining tabs) */}
                 {showAction && (
-                  <td className="py-3.5 px-4 text-left whitespace-nowrap">
+                  <td
+                    className="py-3.5 px-4 text-left whitespace-nowrap"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <div
                       className="inline-flex items-center justify-start"
                       onClick={(e) => e.stopPropagation()}

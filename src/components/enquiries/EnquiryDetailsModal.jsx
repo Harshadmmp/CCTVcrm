@@ -39,7 +39,15 @@ export const EnquiryDetailsModal = ({
   onOpenCreateInvoice,
   onOpenPreviewInvoice,
 }) => {
-  const { enquiries, quotations, orders, invoices, recordCustomerDecision, updateEnquiry } = useApp();
+  const {
+    enquiries,
+    quotations,
+    orders,
+    invoices,
+    recordCustomerDecision,
+    createOrderFromQuotation,
+    updateEnquiry,
+  } = useApp();
 
   const enquiry = enquiries.find((e) => e.id === enquiryId);
 
@@ -69,7 +77,9 @@ export const EnquiryDetailsModal = ({
 
   if (!enquiry) return null;
 
-  const quotation = quotations.find((q) => q.id === enquiry.quotationId);
+  const quotation = quotations.find(
+    (q) => (enquiry.quotationId && q.id === enquiry.quotationId) || q.enquiryId === enquiry.id
+  );
   const order = orders.find((o) => o.id === enquiry.orderId);
   const invoice = invoices.find(
     (i) => i.enquiryId === enquiry.id || (order && i.orderId === order.id)
@@ -209,14 +219,33 @@ export const EnquiryDetailsModal = ({
         }
 
       case 'Quotation Sent':
+        const targetQ = quotation || quotations.find((q) => q.enquiryId === enquiry.id) || {
+          id: enquiry.quotationId || `QT-${enquiry.id.replace('ENQ-', '')}`,
+          enquiryId: enquiry.id,
+          customerName: enquiry.customerName,
+          customerPhone: enquiry.phone,
+          siteAddress: enquiry.siteAddress,
+          status: 'Sent',
+          items: [
+            {
+              id: 'item-1',
+              name: 'Hikvision 4MP ColorVu IP Dome Camera',
+              quantity: enquiry.cameraCount || 4,
+              unitPrice: 3850,
+              lineTotal: (enquiry.cameraCount || 4) * 3850,
+            }
+          ],
+          grandTotal: (enquiry.cameraCount || 4) * 3850,
+        };
+
         return (
-          <div className="flex items-center gap-2 flex-wrap">
-            {quotation && (
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            {targetQ && (
               <>
                 <button
                   type="button"
-                  onClick={() => onOpenQuotation(enquiry, quotation)}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
+                  onClick={() => onOpenQuotation(enquiry, targetQ)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-300 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
                   title="Revise quotation items or pricing"
                 >
                   <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
@@ -225,8 +254,8 @@ export const EnquiryDetailsModal = ({
 
                 <button
                   type="button"
-                  onClick={() => onOpenDecision(quotation, 'Declined')}
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
+                  onClick={() => onOpenDecision(targetQ, 'Declined')}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-300 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
                   title="Mark quotation as declined"
                 >
                   <XCircle className="w-3.5 h-3.5 text-rose-600" />
@@ -235,8 +264,8 @@ export const EnquiryDetailsModal = ({
 
                 <button
                   type="button"
-                  onClick={() => onOpenPreviewQuotation(quotation)}
-                  className="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
+                  onClick={() => onOpenPreviewQuotation(targetQ)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
                 >
                   Preview Quote
                 </button>
@@ -245,26 +274,43 @@ export const EnquiryDetailsModal = ({
             <button
               type="button"
               onClick={() => {
-                if (quotation) {
-                  if (quotation.status !== 'Approved') {
-                    recordCustomerDecision(quotation.id, 'Approved', 'Approved by customer (On-call / In-person)');
-                  }
-                  onOpenCreateOrder({ ...quotation, status: 'Approved' });
-                }
+                createOrderFromQuotation(targetQ.id);
+                onClose();
               }}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 whitespace-nowrap cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 whitespace-nowrap cursor-pointer"
             >
-              <PackageCheck className="w-4 h-4" />
-              <span>Approve & Create Order</span>
+              <PackageCheck className="w-3.5 h-3.5" />
+              <span>Approve & Order</span>
             </button>
           </div>
         );
 
       case 'Customer Approved':
+        const targetQApproved = quotation || quotations.find((q) => q.enquiryId === enquiry.id) || {
+          id: enquiry.quotationId || `QT-${enquiry.id.replace('ENQ-', '')}`,
+          enquiryId: enquiry.id,
+          customerName: enquiry.customerName,
+          customerPhone: enquiry.phone,
+          siteAddress: enquiry.siteAddress,
+          status: 'Approved',
+          items: [
+            {
+              id: 'item-1',
+              name: 'Hikvision 4MP ColorVu IP Dome Camera',
+              quantity: enquiry.cameraCount || 4,
+              unitPrice: 3850,
+              lineTotal: (enquiry.cameraCount || 4) * 3850,
+            }
+          ],
+          grandTotal: (enquiry.cameraCount || 4) * 3850,
+        };
         return (
           <button
             type="button"
-            onClick={() => onOpenCreateOrder(quotation)}
+            onClick={() => {
+              createOrderFromQuotation(targetQApproved.id);
+              onClose();
+            }}
             className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap"
           >
             <PackageCheck className="w-4 h-4" />
@@ -355,7 +401,7 @@ export const EnquiryDetailsModal = ({
       onClose={onClose}
       title={`Enquiry Details: ${enquiry.id}`}
       subtitle={`${enquiry.customerName} • Created ${formatDate(enquiry.createdAt)}`}
-      maxWidth="max-w-2xl"
+      maxWidth="max-w-3xl"
       footer={
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between w-full gap-3 text-xs">
           <div className="flex items-center gap-2">
@@ -367,16 +413,16 @@ export const EnquiryDetailsModal = ({
               <MessageSquare className="w-3.5 h-3.5 text-slate-500" />
               <span>+ Add Follow-up</span>
             </button>
-          </div>
-
-          <div className="flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors cursor-pointer"
+              className="px-3.5 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg shadow-2xs transition-colors cursor-pointer"
             >
               Close
             </button>
+          </div>
+
+          <div className="flex items-center justify-end gap-2">
             {renderPrimaryAction()}
           </div>
         </div>

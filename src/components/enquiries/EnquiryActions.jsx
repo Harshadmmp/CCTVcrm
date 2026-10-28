@@ -33,7 +33,7 @@ export const EnquiryActions = ({
   onOpenCreateInvoice,
   onOpenPreviewInvoice,
 }) => {
-  const { quotations, orders, invoices, recordCustomerDecision } = useApp();
+  const { quotations, orders, invoices, recordCustomerDecision, createOrderFromQuotation } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -119,16 +119,9 @@ export const EnquiryActions = ({
         return (
           <button
             type="button"
-            onClick={() => {
-              if (quotation) {
-                if (quotation.status !== 'Approved') {
-                  recordCustomerDecision(quotation.id, 'Approved', 'Approved by customer (On-call / In-person)');
-                }
-                onOpenCreateOrder({ ...quotation, status: 'Approved' });
-              }
-            }}
+            onClick={() => onOpenDetails?.(enquiry)}
             className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
-            title="Customer approved quotation on call or in-person. Generate Work Order directly."
+            title="Open enquiry details & approve or revise quotation"
           >
             <PackageCheck className="w-3.5 h-3.5" />
             Approve & Order
@@ -139,8 +132,8 @@ export const EnquiryActions = ({
         return (
           <button
             type="button"
-            onClick={() => onOpenCreateOrder(quotation)}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap"
+            onClick={() => onOpenDetails?.(enquiry)}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
           >
             <PackageCheck className="w-3.5 h-3.5" />
             Create Order

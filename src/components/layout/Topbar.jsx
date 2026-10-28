@@ -477,6 +477,12 @@ export const Topbar = ({ onOpenAddEnquiry }) => {
             </div>
           ),
         };
+      case '/settings':
+        return {
+          title: currentUser?.role === 'technician' ? 'Technician Account & Password' : 'Admin Settings & Preferences',
+          badge: currentUser?.role === 'technician' ? 'Technician Security' : 'Security & Profile',
+          actions: null,
+        };
       default:
         return {
           title: 'CCTV Management System',
