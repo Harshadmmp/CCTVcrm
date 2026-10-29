@@ -8,97 +8,48 @@ import {
   initialProducts,
 } from '../data/initialData';
 import { generateNextId } from '../utils/formatters';
+import {
+  getCollectionData,
+  saveDocument,
+  syncCollectionToFirestore,
+} from '../services/firestoreSync';
 
 const AppContext = createContext(null);
 
-const isDummyTestEntry = (item) => {
-  if (!item) return false;
-  const name = typeof item === 'string' ? item : (item.customerName || '');
-  const id = typeof item === 'object' ? (item.id || item.enquiryId || '') : '';
-  const n = (name || '').toLowerCase().trim();
-  const i = (id || '').toUpperCase().trim();
-  if (
-    ['new', 'testing', 'hml', 'test', 'vijay', 'har', 'sunrise international school', 'hotel royal heritage'].includes(n) ||
-    n.startsWith('test ') ||
-    i === 'ENQ-2026-008' ||
-    i === 'QT-2026-008' ||
-    i === 'ORD-2026-008' ||
-    i === 'ENQ-2026-009' ||
-    i === 'QT-2026-009' ||
-    i === 'ORD-2026-009' ||
-    i === 'INV-2026-009'
-  ) {
-    return true;
-  }
-  if (typeof item === 'object') {
-    if (item.workflowStatus === 'Completed' || item.workStatus === 'Completed') {
-      return true;
-    }
-  }
-  return false;
-};
+// Clear legacy localStorage cache for enquiries, quotations, orders, invoices
+try {
+  const legacyKeys = [
+    'cctv_enquiries',
+    'cctv_enquiries_v1',
+    'cctv_enquiries_v2',
+    'cctv_enquiries_v3',
+    'cctv_enquiries_v4',
+    'cctv_enquiries_v5',
+    'cctv_quotations',
+    'cctv_quotations_v1',
+    'cctv_quotations_v2',
+    'cctv_quotations_v3',
+    'cctv_quotations_v4',
+    'cctv_quotations_v5',
+    'cctv_orders',
+    'cctv_orders_v1',
+    'cctv_orders_v2',
+    'cctv_orders_v3',
+    'cctv_orders_v4',
+    'cctv_orders_v5',
+    'cctv_invoices',
+  ];
+  legacyKeys.forEach((key) => localStorage.removeItem(key));
+} catch (e) {
+  // Ignore in case localStorage is restricted
+}
 
 export const AppProvider = ({ children }) => {
-  // Initialize state from LocalStorage or seed data (filtering out manual dummy test data)
-  const [enquiries, setEnquiries] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cctv_enquiries_v5');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const filtered = parsed.filter((e) => !isDummyTestEntry(e));
-        return filtered.length > 0 ? filtered : initialEnquiries;
-      }
-      return initialEnquiries;
-    } catch (e) {
-      console.error('Error reading enquiries from localStorage', e);
-      return initialEnquiries;
-    }
-  });
-
-  const [quotations, setQuotations] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cctv_quotations_v5');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const filtered = parsed.filter((q) => !isDummyTestEntry(q));
-        return filtered.length > 0 ? filtered : initialQuotations;
-      }
-      return initialQuotations;
-    } catch (e) {
-      console.error('Error reading quotations from localStorage', e);
-      return initialQuotations;
-    }
-  });
-
-  const [orders, setOrders] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cctv_orders_v5');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const filtered = parsed.filter((o) => !isDummyTestEntry(o));
-        return filtered.length > 0 ? filtered : initialOrders;
-      }
-      return initialOrders;
-    } catch (e) {
-      console.error('Error reading orders from localStorage', e);
-      return initialOrders;
-    }
-  });
-
-  const [invoices, setInvoices] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cctv_invoices');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const filtered = parsed.filter((i) => !isDummyTestEntry(i));
-        return filtered.length > 0 ? filtered : initialInvoices;
-      }
-      return initialInvoices;
-    } catch (e) {
-      console.error('Error reading invoices from localStorage', e);
-      return initialInvoices;
-    }
-  });
+  // Disconnected from localStorage; clean state directly synced with Cloud Firestore
+  const [enquiries, setEnquiries] = useState([]);
+  const [quotations, setQuotations] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [invoices, setInvoices] = useState([]);
 
   const [technicians, setTechnicians] = useState(() => {
     try {
@@ -173,6 +124,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     try {
       localStorage.setItem('cctv_admin_settings', JSON.stringify(adminSettings));
+      saveDocument('settings', 'admin', adminSettings);
     } catch (e) {
       console.error(e);
     }
@@ -292,42 +244,90 @@ export const AppProvider = ({ children }) => {
   const [techTaskActiveTab, setTechTaskActiveTab] = useState('all');
   const [techTaskSearchQuery, setTechTaskSearchQuery] = useState('');
 
-  // Persist to LocalStorage on changes
+  // Initial Cloud Firestore synchronization
   useEffect(() => {
-    try {
-      localStorage.setItem('cctv_enquiries_v5', JSON.stringify(enquiries));
-    } catch (e) {
-      console.error(e);
+    let isMounted = true;
+    async function initFirestoreData() {
+      try {
+        const [cloudEnquiries, cloudQuotations, cloudOrders, cloudInvoices, cloudTechnicians, cloudProducts] =
+          await Promise.all([
+            getCollectionData('enquiries'),
+            getCollectionData('quotations'),
+            getCollectionData('orders'),
+            getCollectionData('invoices'),
+            getCollectionData('technicians'),
+            getCollectionData('products'),
+          ]);
+
+        if (!isMounted) return;
+
+        if (cloudEnquiries && cloudEnquiries.length > 0) {
+          setEnquiries(cloudEnquiries);
+        }
+
+        if (cloudQuotations && cloudQuotations.length > 0) {
+          setQuotations(cloudQuotations);
+        }
+
+        if (cloudOrders && cloudOrders.length > 0) {
+          setOrders(cloudOrders);
+        }
+
+        if (cloudInvoices && cloudInvoices.length > 0) {
+          setInvoices(cloudInvoices);
+        }
+
+        if (cloudTechnicians && cloudTechnicians.length > 0) {
+          setTechnicians(cloudTechnicians);
+        } else {
+          syncCollectionToFirestore('technicians', technicians);
+        }
+
+        if (cloudProducts && cloudProducts.length > 0) {
+          setProducts(cloudProducts);
+        } else {
+          syncCollectionToFirestore('products', products);
+        }
+      } catch (err) {
+        console.warn('Initial Cloud Firestore sync notice:', err);
+      }
+    }
+
+    initFirestoreData();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Sync directly to Cloud Firestore on changes (localStorage disconnected as requested)
+  useEffect(() => {
+    if (enquiries.length > 0) {
+      syncCollectionToFirestore('enquiries', enquiries);
     }
   }, [enquiries]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('cctv_quotations_v5', JSON.stringify(quotations));
-    } catch (e) {
-      console.error(e);
+    if (quotations.length > 0) {
+      syncCollectionToFirestore('quotations', quotations);
     }
   }, [quotations]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('cctv_orders_v5', JSON.stringify(orders));
-    } catch (e) {
-      console.error(e);
+    if (orders.length > 0) {
+      syncCollectionToFirestore('orders', orders);
     }
   }, [orders]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('cctv_invoices', JSON.stringify(invoices));
-    } catch (e) {
-      console.error(e);
+    if (invoices.length > 0) {
+      syncCollectionToFirestore('invoices', invoices);
     }
   }, [invoices]);
 
   useEffect(() => {
     try {
       localStorage.setItem('cctv_technicians', JSON.stringify(technicians));
+      syncCollectionToFirestore('technicians', technicians);
     } catch (e) {
       console.error(e);
     }
@@ -336,6 +336,7 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     try {
       localStorage.setItem('cctv_products', JSON.stringify(products));
+      syncCollectionToFirestore('products', products);
     } catch (e) {
       console.error(e);
     }
@@ -354,7 +355,7 @@ export const AppProvider = ({ children }) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // Reset to initial demo data
+  // Reset to initial clean state
   const resetDemoData = () => {
     setEnquiries(initialEnquiries);
     setQuotations(initialQuotations);
@@ -363,16 +364,12 @@ export const AppProvider = ({ children }) => {
     setTechnicians(initialTechnicians);
     setProducts(initialProducts);
     try {
-      localStorage.setItem('cctv_enquiries_v3', JSON.stringify(initialEnquiries));
-      localStorage.setItem('cctv_quotations_v3', JSON.stringify(initialQuotations));
-      localStorage.setItem('cctv_orders_v3', JSON.stringify(initialOrders));
-      localStorage.setItem('cctv_invoices', JSON.stringify(initialInvoices));
       localStorage.setItem('cctv_technicians', JSON.stringify(initialTechnicians));
       localStorage.setItem('cctv_products', JSON.stringify(initialProducts));
     } catch (e) {
       console.error(e);
     }
-    addToast('Demo Data Reset', 'Application data has been restored to default sample state.', 'info');
+    addToast('Data Reset', 'Application data has been restored to default state.', 'info');
   };
 
   // Authentication: Login for Admin and Technicians

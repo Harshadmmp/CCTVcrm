@@ -47,10 +47,12 @@ export const EnquiryTable = ({
     const quotation = quotations.find(
       (q) => (enquiry.quotationId && q.id === enquiry.quotationId) || q.enquiryId === enquiry.id
     );
-    const order = orders.find((o) => o.id === enquiry.orderId);
-    const invoice = invoices?.find(
-      (i) => i.enquiryId === enquiry.id || (order && i.orderId === order.id)
+    const order = orders.find(
+      (o) => (enquiry.orderId && o.id === enquiry.orderId) || o.enquiryId === enquiry.id
     );
+    const invoice = order?.invoiceId
+      ? invoices?.find((i) => i.id === order.invoiceId)
+      : null;
 
     const isSiteVisitRequired =
       enquiry.requiresSiteVisit === true ||
@@ -195,7 +197,7 @@ export const EnquiryTable = ({
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer"
           >
             <Receipt className="w-3.5 h-3.5" />
-            <span>Generate Invoice</span>
+            <span>Create Invoice</span>
           </button>
         );
 

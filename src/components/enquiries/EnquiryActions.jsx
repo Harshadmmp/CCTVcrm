@@ -51,11 +51,15 @@ export const EnquiryActions = ({
     };
   }, [menuOpen]);
 
-  const quotation = quotations.find((q) => q.id === enquiry.quotationId);
-  const order = orders.find((o) => o.id === enquiry.orderId);
-  const invoice = invoices.find(
-    (i) => i.enquiryId === enquiry.id || (order && i.orderId === order.id)
+  const quotation = quotations.find(
+    (q) => (enquiry.quotationId && q.id === enquiry.quotationId) || q.enquiryId === enquiry.id
   );
+  const order = orders.find(
+    (o) => (enquiry.orderId && o.id === enquiry.orderId) || o.enquiryId === enquiry.id
+  );
+  const invoice = order?.invoiceId
+    ? invoices.find((i) => i.id === order.invoiceId)
+    : null;
 
   const isSiteVisitRequired =
     enquiry.requiresSiteVisit === true ||

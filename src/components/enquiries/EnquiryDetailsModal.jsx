@@ -80,10 +80,12 @@ export const EnquiryDetailsModal = ({
   const quotation = quotations.find(
     (q) => (enquiry.quotationId && q.id === enquiry.quotationId) || q.enquiryId === enquiry.id
   );
-  const order = orders.find((o) => o.id === enquiry.orderId);
-  const invoice = invoices.find(
-    (i) => i.enquiryId === enquiry.id || (order && i.orderId === order.id)
+  const order = orders.find(
+    (o) => (enquiry.orderId && o.id === enquiry.orderId) || o.enquiryId === enquiry.id
   );
+  const invoice = order?.invoiceId
+    ? invoices.find((i) => i.id === order.invoiceId)
+    : null;
 
   const handleSaveCustomer = (e) => {
     e.preventDefault();
@@ -360,10 +362,10 @@ export const EnquiryDetailsModal = ({
             <button
               type="button"
               onClick={() => onOpenCreateInvoice(order)}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 whitespace-nowrap cursor-pointer"
             >
               <Receipt className="w-4 h-4" />
-              <span>Generate Tax Invoice</span>
+              <span>Create Invoice</span>
             </button>
           );
         } else if (invoice.status === 'Draft') {
