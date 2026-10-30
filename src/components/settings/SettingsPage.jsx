@@ -284,7 +284,6 @@ export const SettingsPage = () => {
   const [preferencesForm, setPreferencesForm] = useState({
     defaultGstRate: 18,
     quotationValidityDays: 30,
-    lowStockThreshold: 5,
     enableSoundAlerts: true,
   });
   const [preferencesSuccess, setPreferencesSuccess] = useState('');
@@ -315,7 +314,6 @@ export const SettingsPage = () => {
       setPreferencesForm({
         defaultGstRate: adminSettings.defaultGstRate || 18,
         quotationValidityDays: adminSettings.quotationValidityDays || 30,
-        lowStockThreshold: adminSettings.lowStockThreshold || 5,
         enableSoundAlerts: adminSettings.enableSoundAlerts ?? true,
       });
     }
@@ -419,7 +417,6 @@ export const SettingsPage = () => {
     updateAdminSettings({
       defaultGstRate: Number(preferencesForm.defaultGstRate) || 18,
       quotationValidityDays: Number(preferencesForm.quotationValidityDays) || 30,
-      lowStockThreshold: Number(preferencesForm.lowStockThreshold) || 5,
       enableSoundAlerts: Boolean(preferencesForm.enableSoundAlerts),
     });
 
@@ -934,43 +931,6 @@ export const SettingsPage = () => {
                   <option value={45}>45 Days</option>
                   <option value={60}>60 Days</option>
                 </select>
-              </div>
-
-              {/* Base Currency */}
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  Operating Currency
-                </label>
-                <input
-                  type="text"
-                  value="₹ (INR - Indian Rupee)"
-                  readOnly
-                  disabled
-                  className="w-full px-3 py-2 border border-slate-200 bg-slate-50 text-slate-600 rounded-lg cursor-not-allowed font-medium"
-                />
-              </div>
-
-              {/* Low Stock Threshold */}
-              <div>
-                <label className="block text-slate-700 font-semibold mb-1">
-                  Low Camera Stock Alert Level (Units)
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="50"
-                  value={preferencesForm.lowStockThreshold}
-                  onChange={(e) =>
-                    setPreferencesForm({
-                      ...preferencesForm,
-                      lowStockThreshold: Number(e.target.value),
-                    })
-                  }
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <p className="text-[11px] text-slate-400 mt-1">
-                  Triggers warning indicator on product inventory when stock falls below this number.
-                </p>
               </div>
             </div>
 
