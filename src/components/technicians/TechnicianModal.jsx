@@ -43,13 +43,21 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
   const validate = () => {
     const errs = {};
     const phoneDigits = (formData.phone || '').replace(/\D/g, '');
-    if (!formData.name.trim()) errs.name = 'Technician full name is required';
+    if (!formData.name.trim()) errs.name = 'Full name is required';
     if (!phoneDigits) {
       errs.phone = 'Phone number is required';
-    } else if (phoneDigits.length !== 10 || !/^\d{10}$/.test(formData.phone)) {
+    } else if (phoneDigits.length !== 10) {
       errs.phone = 'Phone number must be exactly 10 digits';
     }
+    if (!formData.email.trim()) {
+      errs.email = 'Email address is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      errs.email = 'Please enter a valid email address';
+    }
     if (!formData.specialization) errs.specialization = 'Specialization is required';
+    if (!formData.address.trim()) {
+      errs.address = 'Base location / residential address is required';
+    }
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -141,15 +149,21 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Email Address
+              Email Address <span className="text-rose-500">*</span>
             </label>
             <input
               type="email"
               placeholder="Enter Email Address"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => {
+                setFormData({ ...formData, email: e.target.value });
+                if (errors.email) setErrors({ ...errors, email: undefined });
+              }}
+              className={`w-full px-3 py-2 text-xs rounded-lg border ${
+                errors.email ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300'
+              } focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
+            {errors.email && <p className="mt-1 text-xs text-rose-500">{errors.email}</p>}
           </div>
 
           <div>
@@ -187,15 +201,21 @@ export const TechnicianModal = ({ isOpen, onClose, technicianToEdit }) => {
         {/* Address */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1">
-            Base Location / Residential Address
+            Base Location / Residential Address <span className="text-rose-500">*</span>
           </label>
           <textarea
             rows="2"
             placeholder="Enter Base Location / Residential Address"
             value={formData.address}
-            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-            className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) => {
+              setFormData({ ...formData, address: e.target.value });
+              if (errors.address) setErrors({ ...errors, address: undefined });
+            }}
+            className={`w-full px-3 py-2 text-xs rounded-lg border ${
+              errors.address ? 'border-rose-400 bg-rose-50/20' : 'border-slate-300'
+            } focus:outline-none focus:ring-2 focus:ring-blue-500`}
           />
+          {errors.address && <p className="mt-1 text-xs text-rose-500">{errors.address}</p>}
         </div>
       </form>
     </Modal>

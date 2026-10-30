@@ -1,9 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Modal from '../common/Modal';
 import { useApp } from '../../context/AppContext';
 
+const DEFAULT_CATEGORIES = [
+  'Cameras',
+  'DVR / NVR',
+  'Storage & Cables',
+  'Power & Accessories',
+  'Installation & Services',
+];
+
 export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
-  const { addProduct, updateProduct } = useApp();
+  const { products, addProduct, updateProduct } = useApp();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -16,7 +24,25 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
     status: 'Active',
   });
 
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryInput, setCustomCategoryInput] = useState('');
   const [errors, setErrors] = useState({});
+
+  // Compute all available categories from defaults + existing products in catalog
+  const availableCategories = useMemo(() => {
+    const list = [...DEFAULT_CATEGORIES];
+    if (products) {
+      products.forEach((p) => {
+        if (p.category && !list.includes(p.category)) {
+          list.push(p.category);
+        }
+      });
+    }
+    if (productToEdit?.category && !list.includes(productToEdit.category)) {
+      list.push(productToEdit.category);
+    }
+    return list;
+  }, [products, productToEdit]);
 
   useEffect(() => {
     if (productToEdit) {
@@ -30,6 +56,8 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
         unit: productToEdit.unit || 'Unit',
         status: productToEdit.status || 'Active',
       });
+      setIsCustomCategory(false);
+      setCustomCategoryInput('');
     } else {
       setFormData({
         name: '',
@@ -41,11 +69,24 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
         unit: 'Unit',
         status: 'Active',
       });
+      setIsCustomCategory(false);
+      setCustomCategoryInput('');
     }
     setErrors({});
   }, [productToEdit, isOpen]);
 
   const handleCategoryChange = (cat) => {
+    if (cat === '__custom__') {
+      setIsCustomCategory(true);
+      setFormData((prev) => ({
+        ...prev,
+        category: customCategoryInput.trim(),
+        hsnSac: prev.hsnSac || '85258900',
+      }));
+      return;
+    }
+
+    setIsCustomCategory(false);
     let defaultHsn = formData.hsnSac;
     if (!productToEdit) {
       if (cat === 'Installation & Services') defaultHsn = '995469';
@@ -53,6 +94,7 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
       else if (cat === 'DVR / NVR') defaultHsn = '85219090';
       else if (cat === 'Storage & Cables') defaultHsn = '84717020';
       else if (cat === 'Power & Accessories') defaultHsn = '85044090';
+      else defaultHsn = '85258900';
     }
     setFormData((prev) => ({
       ...prev,
@@ -64,7 +106,13 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
   const validate = () => {
     const errs = {};
     if (!formData.name.trim()) errs.name = 'Item name is required';
-    if (!formData.category) errs.category = 'Category is required';
+    if (isCustomCategory) {
+      if (!customCategoryInput.trim()) {
+        errs.category = 'Please enter a name for the new category';
+      }
+    } else if (!formData.category) {
+      errs.category = 'Category is required';
+    }
     if (!formData.unitPrice || isNaN(formData.unitPrice) || Number(formData.unitPrice) <= 0) {
       errs.unitPrice = 'Valid unit price is required';
     }
@@ -76,9 +124,12 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
     e.preventDefault();
     if (!validate()) return;
 
+    const finalCategory = isCustomCategory ? customCategoryInput.trim() : formData.category.trim();
+
     const payload = {
       ...formData,
-      hsnSac: formData.hsnSac?.trim() || (formData.category === 'Installation & Services' ? '9987' : '8525'),
+      category: finalCategory,
+      hsnSac: formData.hsnSac?.trim() || (finalCategory === 'Installation & Services' ? '9987' : '8525'),
       gstRate: formData.gstRate !== '' && !isNaN(Number(formData.gstRate)) ? Number(formData.gstRate) : 18,
       unitPrice: parseFloat(formData.unitPrice),
     };
@@ -145,16 +196,55 @@ export const ProductModal = ({ isOpen, onClose, productToEdit }) => {
               Category <span className="text-rose-500">*</span>
             </label>
             <select
-              value={formData.category}
+              value={isCustomCategory ? '__custom__' : formData.category}
               onChange={(e) => handleCategoryChange(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
             >
-              <option value="Cameras">Cameras (Dome / Bullet / PTZ)</option>
-              <option value="DVR / NVR">DVR / NVR Video Recorders</option>
-              <option value="Storage & Cables">Storage, HDD & Cabling</option>
-              <option value="Power & Accessories">Power Supply, Switches & Racks</option>
-              <option value="Installation & Services">Installation & AMC Services</option>
+              {availableCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+              <option value="__custom__" className="text-blue-600 font-bold bg-blue-50/50">
+                + Add New Category...
+              </option>
             </select>
+
+            {/* Custom Category Input if selected */}
+            {isCustomCategory && (
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="text"
+                    placeholder="Enter new category name (e.g. Access Control)"
+                    value={customCategoryInput}
+                    onChange={(e) => {
+                      setCustomCategoryInput(e.target.value);
+                      setFormData((prev) => ({ ...prev, category: e.target.value }));
+                      if (errors.category) setErrors((prev) => ({ ...prev, category: undefined }));
+                    }}
+                    autoFocus
+                    className="w-full px-3 py-1.5 text-xs rounded-lg border border-blue-400 bg-blue-50/20 focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomCategory(false);
+                      setCustomCategoryInput('');
+                      handleCategoryChange('Cameras');
+                    }}
+                    className="px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 border border-slate-300 rounded-lg bg-white hover:bg-slate-50 transition-colors whitespace-nowrap cursor-pointer"
+                    title="Cancel new category"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                <p className="text-[11px] text-blue-600">
+                  This new category will be saved and available across the system.
+                </p>
+              </div>
+            )}
+            {errors.category && <p className="mt-1 text-xs text-rose-500">{errors.category}</p>}
           </div>
 
           <div>

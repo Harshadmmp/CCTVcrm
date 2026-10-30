@@ -19,6 +19,7 @@ import StatusBadge from '../common/StatusBadge';
 import EmptyState from '../common/EmptyState';
 import TechnicianModal from './TechnicianModal';
 import Modal from '../common/Modal';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 export const TechniciansPage = () => {
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ export const TechniciansPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [technicianToEdit, setTechnicianToEdit] = useState(null);
   const [viewTech, setViewTech] = useState(null);
+  const [techToDelete, setTechToDelete] = useState(null);
 
   const filteredTechnicians = useMemo(() => {
     return technicians.filter((tech) => {
@@ -91,14 +93,14 @@ export const TechniciansPage = () => {
             />
           ) : (
             <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-slate-100/80 text-slate-600 font-semibold border-b border-slate-200">
+              <thead className="bg-slate-100/90 text-slate-800 font-bold border-b border-slate-200">
                 <tr>
-                  <th className="py-3 px-4 w-28">ID</th>
-                  <th className="py-3 px-4">Technician Name</th>
-                  <th className="py-3 px-3">Contact</th>
-                  <th className="py-3 px-3">Specialization</th>
-                  <th className="py-3 px-3">Location / Address</th>
-                  <th className="py-3 px-3 text-center w-24">Status</th>
+                  <th className="py-3 px-4 w-28 font-bold text-slate-800">ID</th>
+                  <th className="py-3 px-4 font-bold text-slate-800">Technician Name</th>
+                  <th className="py-3 px-3 font-bold text-slate-800">Contact</th>
+                  <th className="py-3 px-3 font-bold text-slate-800">Specialization</th>
+                  <th className="py-3 px-3 font-bold text-slate-800">Location / Address</th>
+                  <th className="py-3 px-3 text-center w-24 font-bold text-slate-800">Status</th>
                   <th className="py-3 px-4 w-10 text-right"></th>
                 </tr>
               </thead>
@@ -126,7 +128,7 @@ export const TechniciansPage = () => {
                           <div>
                             <span className="font-semibold text-slate-900 block text-xs">{t.name}</span>
                             <span className="text-[11px] text-slate-400">
-                              {t.experienceYears ? `${t.experienceYears} yrs exp • ` : ''}{activeAssignedCount} active jobs
+                              {activeAssignedCount} active jobs
                             </span>
                           </div>
                         </div>
@@ -181,10 +183,8 @@ export const TechniciansPage = () => {
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm(`Are you sure you want to delete technician ${viewTech.name}?`)) {
-                    deleteTechnician(viewTech.id);
-                    setViewTech(null);
-                  }
+                  setTechToDelete(viewTech);
+                  setViewTech(null);
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
               >
@@ -239,15 +239,9 @@ export const TechniciansPage = () => {
               <StatusBadge status={viewTech.status} />
             </div>
 
-            <div className="grid grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-lg border border-slate-200">
-              <div>
-                <span className="text-slate-500 font-medium block">Specialization:</span>
-                <p className="font-semibold text-slate-800 text-sm mt-0.5">{viewTech.specialization}</p>
-              </div>
-              <div>
-                <span className="text-slate-500 font-medium block">Experience:</span>
-                <p className="font-semibold text-slate-800 text-sm mt-0.5">{viewTech.experienceYears ? `${viewTech.experienceYears} Years` : '—'}</p>
-              </div>
+            <div className="bg-slate-50 p-3.5 rounded-lg border border-slate-200">
+              <span className="text-slate-500 font-medium block">Specialization:</span>
+              <p className="font-semibold text-slate-800 text-sm mt-0.5">{viewTech.specialization}</p>
             </div>
 
             <div>
@@ -274,6 +268,23 @@ export const TechniciansPage = () => {
           </div>
         </Modal>
       )}
+
+      {/* Beautiful Delete Technician Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(techToDelete)}
+        onClose={() => setTechToDelete(null)}
+        onConfirm={() => {
+          if (techToDelete) {
+            deleteTechnician(techToDelete.id);
+            setTechToDelete(null);
+          }
+        }}
+        title="Delete Technician"
+        message={`Are you sure you want to delete technician "${techToDelete?.name}" (${techToDelete?.id})? This staff profile will be removed.`}
+        confirmText="Delete Technician"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

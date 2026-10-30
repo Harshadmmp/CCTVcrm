@@ -103,12 +103,7 @@ export const Sidebar = ({ isOpen, onToggle, onClose }) => {
         </div>
 
         {/* Navigation list */}
-        <div className={`flex-1 overflow-y-auto space-y-1.5 ${isOpen ? 'px-3 py-5' : 'px-2 py-4'}`}>
-          {isOpen && (
-            <div className="px-3 mb-2 text-[10px] font-semibold text-blue-300 uppercase tracking-wider">
-              {isTech ? 'Field Operations' : 'Main Menu'}
-            </div>
-          )}
+        <div className={`flex-1 overflow-y-auto space-y-1.5 ${isOpen ? 'px-3 py-4' : 'px-2 py-4'}`}>
           {navItems.map((item) => {
             const Icon = item.icon;
             return (

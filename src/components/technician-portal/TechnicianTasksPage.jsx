@@ -73,7 +73,7 @@ export const TechnicianTasksPage = () => {
     );
   }, [orders, activeTech]);
 
-  // 2. Get assigned site visits for this technician
+  // 2. Get assigned site visits for this technician (strictly matches site visit technician)
   const assignedSurveys = useMemo(() => {
     if (!activeTech?.id && !activeTech?.name) return [];
     return enquiries.filter((e) => {
@@ -81,9 +81,7 @@ export const TechnicianTasksPage = () => {
       if (!sv) return false;
       const matchesTech =
         (sv.staffOrTechId && activeTech.id && sv.staffOrTechId.toLowerCase() === activeTech.id.toLowerCase()) ||
-        (sv.staffOrTechName && activeTech.name && sv.staffOrTechName.toLowerCase().trim() === activeTech.name.toLowerCase().trim()) ||
-        (e.technicianId && activeTech.id && e.technicianId.toLowerCase() === activeTech.id.toLowerCase()) ||
-        (e.technicianName && activeTech.name && e.technicianName.toLowerCase().trim() === activeTech.name.toLowerCase().trim());
+        (sv.staffOrTechName && activeTech.name && sv.staffOrTechName.toLowerCase().trim() === activeTech.name.toLowerCase().trim());
       return matchesTech;
     });
   }, [enquiries, activeTech]);
@@ -249,14 +247,14 @@ export const TechnicianTasksPage = () => {
             />
           ) : (
             <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-slate-100/80 text-slate-600 font-semibold border-b border-slate-200 select-none">
+              <thead className="bg-slate-100/90 text-slate-800 font-bold border-b border-slate-200 select-none">
                 <tr>
-                  <th className="py-3 px-4 w-28">Task ID</th>
-                  <th className="py-3 px-4 min-w-[130px]">Type</th>
-                  <th className="py-3 px-4 min-w-[200px]">Customer</th>
-                  <th className="py-3 px-4 min-w-[240px]">Site Address</th>
-                  <th className="py-3 px-3 min-w-[140px]">Schedule / Date</th>
-                  <th className="py-3 px-3 min-w-[120px]">Status</th>
+                  <th className="py-3 px-4 w-28 font-bold text-slate-800">Task ID</th>
+                  <th className="py-3 px-4 min-w-[130px] font-bold text-slate-800">Type</th>
+                  <th className="py-3 px-4 min-w-[200px] font-bold text-slate-800">Customer</th>
+                  <th className="py-3 px-4 min-w-[240px] font-bold text-slate-800">Site Address</th>
+                  <th className="py-3 px-3 min-w-[140px] font-bold text-slate-800">Schedule / Date</th>
+                  <th className="py-3 px-3 min-w-[120px] font-bold text-slate-800">Status</th>
                   <th className="py-3 px-4 w-10 text-right"></th>
                 </tr>
               </thead>

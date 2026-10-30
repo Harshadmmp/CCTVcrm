@@ -295,16 +295,18 @@ export const SettingsPage = () => {
       setProfileForm({
         name: adminSettings.name || 'Office Admin',
         username: adminSettings.username || 'admin',
-        email: adminSettings.email || 'admin@securevision.in',
-        phone: adminSettings.phone || '+91 98100 12345',
+        email: adminSettings.email || 'akpatil7788@gmail.com',
+        phone: adminSettings.phone || '7410108728',
       });
 
       setCompanyForm({
-        companyName: adminSettings.companyName || 'SecureVision CCTV Systems',
-        companyPhone: adminSettings.companyPhone || '+91 98100 12345',
-        companyEmail: adminSettings.companyEmail || 'contact@securevision.in',
-        companyAddress: adminSettings.companyAddress || 'Sector 18, Commercial Plaza, Gurugram 122001',
-        gstin: adminSettings.gstin || '06AAAAA0000A1Z5',
+        companyName: adminSettings.companyName || 'AP SECURITY SYSTEM',
+        companyPhone: adminSettings.companyPhone || '7410108728',
+        companyEmail: adminSettings.companyEmail || 'akpatil7788@gmail.com',
+        companyAddress:
+          adminSettings.companyAddress ||
+          'Co/off:- C.S. No 8265/4 KORE CLASSIC FRONT JAI HIND COLONY FRONT OF DR SAKEKAR VISHRAMBAG, SANGLI 416415',
+        gstin: adminSettings.gstin || '27EUDPP0562H1ZJ',
         quotationTerms:
           adminSettings.quotationTerms ||
           '1. Prices are all-inclusive of applicable GST.\n2. 50% advance along with work order, remaining 50% upon installation sign-off.\n3. 1-Year on-site warranty on all cameras and recording equipment.\n4. Free mobile view app configuration and staff training included.',
@@ -449,7 +451,7 @@ export const SettingsPage = () => {
                   Username: <strong className="text-slate-700 font-semibold">{profileForm.username || 'admin'}</strong>
                 </span>
                 <span>•</span>
-                <span>{profileForm.email || 'admin@securevision.in'}</span>
+                <span>{profileForm.email || 'akpatil7788@gmail.com'}</span>
               </p>
             </div>
           </div>
@@ -585,7 +587,7 @@ export const SettingsPage = () => {
                       type="email"
                       value={profileForm.email}
                       onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                      placeholder="admin@securevision.in"
+                      placeholder="akpatil7788@gmail.com"
                       className={`w-full pl-9 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                         profileErrors.email ? 'border-rose-400 bg-rose-50/30' : 'border-slate-300'
                       }`}
@@ -771,7 +773,7 @@ export const SettingsPage = () => {
                   type="text"
                   value={companyForm.companyName}
                   onChange={(e) => setCompanyForm({ ...companyForm, companyName: e.target.value })}
-                  placeholder="SecureVision CCTV Systems"
+                  placeholder="AP SECURITY SYSTEM"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -785,7 +787,7 @@ export const SettingsPage = () => {
                   type="text"
                   value={companyForm.gstin}
                   onChange={(e) => setCompanyForm({ ...companyForm, gstin: e.target.value })}
-                  placeholder="06AAAAA0000A1Z5"
+                  placeholder="27EUDPP0562H1ZJ"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase"
                 />
               </div>
@@ -799,7 +801,7 @@ export const SettingsPage = () => {
                   type="tel"
                   value={companyForm.companyPhone}
                   onChange={(e) => setCompanyForm({ ...companyForm, companyPhone: e.target.value })}
-                  placeholder="+91 98100 12345"
+                  placeholder="7410108728"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -813,7 +815,7 @@ export const SettingsPage = () => {
                   type="email"
                   value={companyForm.companyEmail}
                   onChange={(e) => setCompanyForm({ ...companyForm, companyEmail: e.target.value })}
-                  placeholder="contact@securevision.in"
+                  placeholder="akpatil7788@gmail.com"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -828,7 +830,7 @@ export const SettingsPage = () => {
                 rows={2}
                 value={companyForm.companyAddress}
                 onChange={(e) => setCompanyForm({ ...companyForm, companyAddress: e.target.value })}
-                placeholder="Sector 18, Commercial Plaza, Gurugram 122001"
+                placeholder="Co/off:- C.S. No 8265/4 KORE CLASSIC FRONT JAI HIND COLONY FRONT OF DR SAKEKAR VISHRAMBAG, SANGLI 416415"
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
             </div>

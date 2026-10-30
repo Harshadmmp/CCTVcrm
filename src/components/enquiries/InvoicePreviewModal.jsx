@@ -1,14 +1,51 @@
 import React from 'react';
 import { Printer, CheckCircle2, Send, AlertCircle, FileText, Share2 } from 'lucide-react';
 import Modal from '../common/Modal';
-import { formatINR, formatDate } from '../../utils/formatters';
+import { formatINR, formatDate, numberToWords } from '../../utils/formatters';
 import { useApp } from '../../context/AppContext';
+import { printDocument } from '../../utils/printDocument';
 
 export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
-  const { reviewInvoice, sendInvoice, invoices, addToast } = useApp();
+  const { reviewInvoice, sendInvoice, invoices, addToast, products = [], adminSettings, enquiries = [] } = useApp();
 
   // Keep live status in sync with application state if invoice already exists
   const liveInvoice = invoices.find((i) => i.id === invoice?.id) || invoice;
+
+  // Resolve matching customer details to ensure accuracy with current enquiry
+  const matchingEnquiry = (enquiries || []).find(
+    (e) => (liveInvoice?.enquiryId && e.id === liveInvoice.enquiryId) ||
+           (liveInvoice?.orderId && e.orderId === liveInvoice.orderId)
+  );
+
+  const displayCustomerName =
+    (matchingEnquiry?.customerName && liveInvoice?.customerName === 'Green Valley Residential Society')
+      ? matchingEnquiry.customerName
+      : liveInvoice?.customerName || matchingEnquiry?.customerName || 'Customer';
+
+  const displayCustomerPhone =
+    (matchingEnquiry?.phone && liveInvoice?.customerName === 'Green Valley Residential Society')
+      ? matchingEnquiry.phone
+      : liveInvoice?.customerPhone || matchingEnquiry?.phone || '';
+
+  const displaySiteAddress =
+    (matchingEnquiry?.siteAddress && liveInvoice?.customerName === 'Green Valley Residential Society')
+      ? matchingEnquiry.siteAddress
+      : liveInvoice?.siteAddress || matchingEnquiry?.siteAddress || '';
+
+  const getEffectiveHsn = (it) => {
+    if (it?.hsnSac && it.hsnSac !== '-' && it.hsnSac !== '—') return String(it.hsnSac);
+    const match = products.find(
+      (p) => p.id === it?.productId || p.name?.toLowerCase().trim() === it?.name?.toLowerCase().trim()
+    );
+    if (match?.hsnSac) return String(match.hsnSac);
+    const cat = it?.category || match?.category;
+    if (cat === 'Installation & Services') return '995469';
+    if (cat === 'Cameras') return '85258900';
+    if (cat === 'DVR / NVR') return '85219090';
+    if (cat === 'Storage & Cables') return '84717020';
+    if (cat === 'Power & Accessories') return '85044090';
+    return '85258900';
+  };
 
   if (!liveInvoice) return null;
 
@@ -16,14 +53,32 @@ export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
   const isSent = liveInvoice.status === 'Sent';
   const isDraftOnly = liveInvoice.id === 'INV-DRAFT';
 
+  const totalQuantity = (liveInvoice.items || []).reduce(
+    (sum, it) => sum + (Number(it.quantity) || 0),
+    0
+  );
+
+  const calculatedItemsTotal = (liveInvoice.items || []).reduce(
+    (sum, it) => sum + (Number(it.lineTotal) || (Number(it.quantity) * Number(it.unitPrice)) || 0),
+    0
+  );
+  const effectiveDiscount =
+    Number(liveInvoice.discount) ||
+    Math.max(0, calculatedItemsTotal - Number(liveInvoice.grandTotal));
+  const effectiveSubtotal =
+    liveInvoice.subtotal ||
+    (effectiveDiscount > 0 ? calculatedItemsTotal : liveInvoice.grandTotal);
+
   const handlePrint = () => {
-    window.print();
+    printDocument('.printable-document', `Tax_Invoice_${liveInvoice.id}`);
   };
 
   const handleWhatsAppShare = () => {
-    const rawPhone = liveInvoice.customerPhone ? liveInvoice.customerPhone.replace(/\D/g, '') : '';
+    const rawPhone = displayCustomerPhone ? displayCustomerPhone.replace(/\D/g, '') : '';
     const cleanPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
-    const message = `Hello ${liveInvoice.customerName}, here is your Tax Invoice (${liveInvoice.id}) from SecureEye CCTV Solutions.\nOrder Ref: ${liveInvoice.orderId || 'CCTV Installation'}\nInvoice Date: ${formatDate(liveInvoice.invoiceDate)}\nDue Date: ${formatDate(liveInvoice.dueDate)}\nTotal Amount: ${formatINR(liveInvoice.grandTotal)} (Inclusive of applicable GST).\nThank you for choosing SecureEye CCTV Solutions!`;
+    const viewUrl = `${window.location.origin}/view-invoice/${liveInvoice.id}`;
+    const companyName = adminSettings?.companyName || 'AP SECURITY SYSTEM';
+    const message = `Hello ${displayCustomerName},\n\nHere is your Tax Invoice (${liveInvoice.id}) from ${companyName}.\nTotal Amount: ${formatINR(liveInvoice.grandTotal)} (Inclusive of applicable GST).\nDue Date: ${formatDate(liveInvoice.dueDate)}\n\n📄 View & Download your PDF Invoice here:\n${viewUrl}\n\nThank you for choosing ${companyName}!`;
     const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
 
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
@@ -55,7 +110,7 @@ export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
       onClose={onClose}
       zIndex="z-[70]"
       title={`Tax Invoice • ${liveInvoice.id}`}
-      subtitle={`Customer: ${liveInvoice.customerName} • Status: ${liveInvoice.status}`}
+      subtitle={`Customer: ${displayCustomerName} • Status: ${liveInvoice.status}`}
       maxWidth="max-w-4xl"
       footer={
         <div className="flex flex-wrap items-center justify-between w-full gap-2">
@@ -124,151 +179,254 @@ export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
         </div>
       }
     >
-      <div className="space-y-4">
-        {/* Printable Invoice Sheet */}
-        <div className="printable-document bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-xs text-slate-800">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-6 border-b border-slate-200">
-            <div>
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
-                  SV
-                </div>
-                <h3 className="text-lg font-bold text-slate-900 tracking-tight">
-                  SecureEye CCTV Solutions Pvt. Ltd.
-                </h3>
+      <div className="space-y-4 print:space-y-0">
+        {/* Printable Classic Indian Tax Invoice / Estimate Sheet */}
+        <div className="printable-document bg-white border border-slate-400 p-6 sm:p-8 text-slate-900 shadow-xs print:p-4 print:border print:border-slate-400 print:shadow-none print:w-full print:max-w-none">
+          {/* Top Title */}
+          <h1 className="text-xl font-bold tracking-wider text-center uppercase text-slate-800 mb-2">
+            Tax Invoice
+          </h1>
+
+          {/* Company Details Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-3">
+            <div className="flex items-center gap-2.5">
+              <div className="w-12 h-12 bg-slate-900 text-white rounded-md flex items-center justify-center font-black text-sm tracking-wider flex-shrink-0 shadow-xs">
+                CCTV
               </div>
-              <p className="text-xs text-slate-500 mt-1">
-                Plot 104, Institutional Area, Sector 32, Gurugram, Haryana 122001
-              </p>
-              <p className="text-xs text-slate-500">
-                Email: billing@securevision.in | Phone: +91 124 456 7890
-              </p>
-              <p className="text-xs font-mono text-slate-600 mt-0.5 font-medium">
-                GSTIN: 07AABCS1429B1Z8
-              </p>
             </div>
 
-            <div className="text-left sm:text-right">
-              <span className="inline-block px-3 py-1 text-xs font-bold uppercase tracking-wider bg-violet-100 text-violet-800 rounded">
-                Tax Invoice
-              </span>
-              <p className="text-sm font-bold text-slate-900 mt-2">
-                {liveInvoice.id}
+            <div className="text-left sm:text-right text-xs space-y-0.5">
+              <h2 className="text-base sm:text-lg font-black uppercase text-slate-900 tracking-tight">
+                {adminSettings?.companyName || 'AP SECURITY SYSTEM'}
+              </h2>
+              <p className="text-[11px] text-slate-700 max-w-md sm:ml-auto leading-tight">
+                {adminSettings?.companyAddress ||
+                  'Co/off- C.S. No 8265/4 KORE CLASSIC FRONT JAI HIND COLONY FRONT OF DR SAKEKAR VISHRAMBAG, SANGLI 416415'}
               </p>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Invoice Date: <span className="font-medium text-slate-700">{formatDate(liveInvoice.invoiceDate)}</span>
+              <p className="text-[11px] text-slate-700">
+                Phone no.: <span className="font-semibold text-slate-900">{adminSettings?.companyPhone || '7410108728'}</span> | Email:{' '}
+                <span className="font-semibold text-slate-900">{adminSettings?.companyEmail || 'akpatil7788@gmail.com'}</span>
               </p>
-              <p className="text-xs text-slate-500">
-                Due Date: <span className="font-medium text-slate-700">{formatDate(liveInvoice.dueDate)}</span>
-              </p>
-              <p className="text-xs text-slate-500">
-                Order Ref: <span className="font-medium text-slate-700">{liveInvoice.orderId}</span>
+              <p className="text-[11px] text-slate-800 font-bold">
+                GSTIN: <span className="font-mono">{adminSettings?.gstin || '27EUDPP0562H1ZJ'}</span> | State:{' '}
+                <span className="font-semibold">27-Maharashtra</span>
               </p>
             </div>
           </div>
 
-          {/* Billed to */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-4 border-b border-slate-200 text-xs">
-            <div>
-              <h5 className="font-bold text-slate-500 uppercase tracking-wider mb-1">
-                Billed To:
-              </h5>
-              <p className="text-sm font-semibold text-slate-900">{liveInvoice.customerName}</p>
-              <p className="text-slate-600 mt-0.5">{liveInvoice.customerPhone}</p>
-              <p className="text-slate-600 leading-relaxed mt-0.5">{liveInvoice.siteAddress}</p>
+          {/* Two Shaded Header Blocks (Invoice For & Invoice Details) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 border border-slate-400 mt-2 text-xs">
+            {/* Left: Invoice For */}
+            <div className="border-b sm:border-b-0 sm:border-r border-slate-400">
+              <div className="bg-[#b9cde5] text-slate-900 font-bold px-3 py-1 border-b border-slate-400 tracking-wide text-xs">
+                Invoice For
+              </div>
+              <div className="p-2.5 space-y-1">
+                <p className="font-bold text-sm text-slate-900">{displayCustomerName}</p>
+                {displayCustomerPhone && (
+                  <p className="text-slate-700">
+                    Phone: <span className="font-medium text-slate-900">{displayCustomerPhone}</span>
+                  </p>
+                )}
+                {displaySiteAddress && (
+                  <p className="text-slate-700 leading-snug">{displaySiteAddress}</p>
+                )}
+              </div>
             </div>
+
+            {/* Right: Invoice Details */}
             <div>
-              <h5 className="font-bold text-slate-500 uppercase tracking-wider mb-1">
-                Installation & Commissioning Site:
-              </h5>
-              <p className="text-slate-700 leading-relaxed">{liveInvoice.siteAddress}</p>
-              {liveInvoice.reviewedAt && (
-                <p className="text-[11px] text-violet-700 mt-2 font-medium">
-                  Office Reviewed on: {liveInvoice.reviewedAt}
-                </p>
-              )}
+              <div className="bg-[#b9cde5] text-slate-900 font-bold px-3 py-1 border-b border-slate-400 tracking-wide text-xs">
+                Invoice Details
+              </div>
+              <div className="p-2.5 space-y-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-slate-600 font-medium">Invoice No.:</span>
+                  <span className="font-bold text-slate-900">{liveInvoice.id}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-600 font-medium">Date:</span>
+                  <span className="font-bold text-slate-900">{formatDate(liveInvoice.invoiceDate)}</span>
+                </div>
+                {liveInvoice.dueDate && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-600 font-medium">Due Date:</span>
+                    <span className="font-bold text-slate-900">{formatDate(liveInvoice.dueDate)}</span>
+                  </div>
+                )}
+                {liveInvoice.orderId && (
+                  <div className="flex justify-between text-[11px] text-slate-500">
+                    <span>Order Ref:</span>
+                    <span className="font-mono">{liveInvoice.orderId}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Item Table */}
-          <div className="py-4">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-700 font-semibold border-b border-slate-200">
-                <tr>
-                  <th className="py-2.5 px-3 w-8">#</th>
-                  <th className="py-2.5 px-3">Description of Work / Hardware</th>
-                  <th className="py-2.5 px-3 w-24">HSN / SAC</th>
-                  <th className="py-2.5 px-3 text-center w-16">Qty</th>
-                  <th className="py-2.5 px-3 text-right w-24">Unit Price</th>
-                  <th className="py-2.5 px-3 text-center w-16">GST %</th>
-                  <th className="py-2.5 px-3 text-right w-28">Amount</th>
+          {/* Classic Itemized Table with Crisp Borders */}
+          <div className="border border-slate-400 mt-2 overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-[#b9cde5] text-slate-900 font-bold border-b border-slate-400">
+                  <th className="py-2 px-2.5 w-10 text-center border-r border-slate-400">#</th>
+                  <th className="py-2 px-3 border-r border-slate-400">Item name</th>
+                  <th className="py-2 px-2.5 w-28 text-center border-r border-slate-400">HSN/ SAC</th>
+                  <th className="py-2 px-2.5 w-20 text-center border-r border-slate-400">Quantity</th>
+                  <th className="py-2 px-3 w-28 text-right border-r border-slate-400">Price/ unit</th>
+                  <th className="py-2 px-3 w-32 text-right">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody>
                 {liveInvoice.items?.map((item, idx) => (
-                  <tr key={item.id || idx}>
-                    <td className="py-2.5 px-3 text-slate-400">{idx + 1}</td>
-                    <td className="py-2.5 px-3 font-medium text-slate-900">{item.name}</td>
-                    <td className="py-2.5 px-3 font-mono text-[11px] text-slate-600 font-medium">
-                      {item.hsnSac || '—'}
+                  <tr key={item.id || idx} className="border-b border-slate-300 hover:bg-slate-50/50">
+                    <td className="py-1.5 px-2.5 text-center text-slate-700 border-r border-slate-300">{idx + 1}</td>
+                    <td className="py-1.5 px-3 font-semibold text-slate-900 border-r border-slate-300">{item.name}</td>
+                    <td className="py-1.5 px-2.5 text-center font-mono text-[11px] text-slate-800 border-r border-slate-300 font-medium">
+                      {getEffectiveHsn(item)}
                     </td>
-                    <td className="py-2.5 px-3 text-center text-slate-700">{item.quantity}</td>
-                    <td className="py-2.5 px-3 text-right text-slate-700">{formatINR(item.unitPrice)}</td>
-                    <td className="py-2.5 px-3 text-center text-[11px] font-semibold text-slate-700">
-                      {item.gstRate ?? 18}%
+                    <td className="py-1.5 px-2.5 text-center font-medium text-slate-800 border-r border-slate-300">
+                      {item.quantity}
                     </td>
-                    <td className="py-2.5 px-3 text-right font-semibold text-slate-900">
+                    <td className="py-1.5 px-3 text-right text-slate-800 border-r border-slate-300">
+                      {formatINR(item.unitPrice)}
+                    </td>
+                    <td className="py-1.5 px-3 text-right font-bold text-slate-900">
                       {formatINR(item.lineTotal)}
                     </td>
                   </tr>
                 ))}
+                {/* Total Row */}
+                <tr className="bg-slate-50/90 font-bold text-slate-900 border-t border-slate-400">
+                  <td className="py-2 px-2.5 text-center border-r border-slate-400 font-bold" colSpan={3}>
+                    Total
+                  </td>
+                  <td className="py-2 px-2.5 text-center border-r border-slate-400 font-bold">
+                    {totalQuantity}
+                  </td>
+                  <td className="py-2 px-3 border-r border-slate-400"></td>
+                  <td className="py-2 px-3 text-right font-black text-slate-900">
+                    {formatINR(effectiveSubtotal || liveInvoice.grandTotal)}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
 
-          {/* Totals */}
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-6 pt-4 border-t border-slate-200">
-            <div className="text-xs text-slate-600 max-w-sm">
-              <h5 className="font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Bank & Payment Details
-              </h5>
-              <p className="text-[11px] leading-relaxed text-slate-500">
-                Bank: HDFC Bank Ltd.<br />
-                Account Name: SecureEye CCTV Solutions Pvt. Ltd.<br />
-                Account No: 50200067891234<br />
-                IFSC: HDFC0001234<br />
-                UPI ID: securevision@hdfcbank
-              </p>
+          {/* Amounts Box (Right-aligned below table) */}
+          <div className="w-full sm:w-72 ml-auto border border-slate-400 mt-2 text-xs">
+            <div className="bg-[#b9cde5] text-slate-900 font-bold px-3 py-1 border-b border-slate-400">
+              Amounts
             </div>
-
-            <div className="w-full sm:w-64 space-y-2 text-xs bg-slate-50 p-4 rounded-lg border border-slate-200">
-              <div className="flex justify-between text-slate-600">
-                <span>Subtotal:</span>
-                <span className="font-medium text-slate-900">{formatINR(liveInvoice.subtotal)}</span>
-              </div>
-              <div className="pt-2 border-t border-slate-300 flex justify-between items-baseline">
-                <div>
-                  <span className="text-sm font-bold text-slate-900">Grand Total:</span>
-                  <p className="text-[10px] text-slate-500">(Includes applicable taxes)</p>
+            <div className="p-2.5 space-y-1.5">
+              {effectiveDiscount > 0 && (
+                <div className="flex justify-between text-emerald-700 font-medium">
+                  <span>Special Discount:</span>
+                  <span className="font-semibold">- {formatINR(effectiveDiscount)}</span>
                 </div>
-                <span className="text-lg font-bold text-blue-600">
-                  {formatINR(liveInvoice.grandTotal)}
-                </span>
+              )}
+              <div className="flex justify-between text-sm font-bold text-slate-900">
+                <span>Total:</span>
+                <span className="text-blue-900 font-black">{formatINR(liveInvoice.grandTotal)}</span>
               </div>
             </div>
           </div>
 
-          {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-slate-200 flex justify-between items-end text-xs text-slate-500">
-            <div>
-              <p className="font-medium text-slate-700">Payment terms: Strictly 15 days from invoice date.</p>
-              <p className="text-[11px]">This is a computer-generated tax invoice.</p>
+          {/* Amount In Words Box (Full width) */}
+          <div className="border border-slate-400 mt-2 text-xs">
+            <div className="bg-[#b9cde5] text-slate-900 font-bold px-3 py-1 border-b border-slate-400">
+              Estimate Amount In Words
             </div>
-            <div className="text-right">
-              <p className="font-semibold text-slate-800">For SecureEye CCTV Solutions Pvt. Ltd.</p>
-              <div className="h-10"></div>
-              <p className="border-t border-slate-300 pt-1 text-[11px]">Accounts Department</p>
+            <div className="p-2.5 font-bold text-slate-900 tracking-wide text-xs">
+              {numberToWords(liveInvoice.grandTotal)}
+            </div>
+          </div>
+
+          {/* Bottom 3 Blocks: Bank Details, Terms, and Authorized Signatory */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 print:grid-cols-3 border border-slate-400 mt-2 text-xs">
+            {/* Block 1: Bank Details with UPI QR Code */}
+            <div className="border-b sm:border-b-0 sm:border-r print:border-b-0 print:border-r border-slate-400">
+              <div className="bg-[#b9cde5] text-slate-900 font-bold px-3 py-1 border-b border-slate-400">
+                Bank Details
+              </div>
+              <div className="p-2.5 flex items-start gap-2.5">
+                {/* Visual UPI QR code */}
+                <div className="w-20 h-20 bg-white border border-slate-300 p-1 rounded flex flex-col items-center justify-center flex-shrink-0 shadow-2xs">
+                  <svg viewBox="0 0 100 100" className="w-14 h-14 text-slate-900">
+                    <rect x="0" y="0" width="30" height="30" fill="currentColor" />
+                    <rect x="5" y="5" width="20" height="20" fill="white" />
+                    <rect x="10" y="10" width="10" height="10" fill="currentColor" />
+
+                    <rect x="70" y="0" width="30" height="30" fill="currentColor" />
+                    <rect x="75" y="5" width="20" height="20" fill="white" />
+                    <rect x="80" y="10" width="10" height="10" fill="currentColor" />
+
+                    <rect x="0" y="70" width="30" height="30" fill="currentColor" />
+                    <rect x="5" y="75" width="20" height="20" fill="white" />
+                    <rect x="10" y="80" width="10" height="10" fill="currentColor" />
+
+                    <rect x="35" y="10" width="10" height="10" fill="currentColor" />
+                    <rect x="50" y="15" width="15" height="10" fill="currentColor" />
+                    <rect x="35" y="35" width="30" height="30" fill="currentColor" />
+                    <rect x="40" y="40" width="20" height="20" fill="white" />
+                    <rect x="45" y="45" width="10" height="10" fill="currentColor" />
+                    <rect x="10" y="45" width="15" height="10" fill="currentColor" />
+                    <rect x="75" y="45" width="15" height="15" fill="currentColor" />
+                    <rect x="40" y="75" width="20" height="10" fill="currentColor" />
+                    <rect x="70" y="70" width="10" height="20" fill="currentColor" />
+                    <rect x="85" y="85" width="10" height="10" fill="currentColor" />
+                  </svg>
+                  <span className="text-[7.5px] font-black tracking-tighter text-blue-700 mt-0.5">UPI SCAN & PAY</span>
+                </div>
+                <div className="text-[10px] space-y-0.5 text-slate-800 leading-snug">
+                  <p>
+                    <span className="text-slate-500">Name:</span> <strong className="text-slate-900">YES BANK, VISHRAM BAUG, SANGLI</strong>
+                  </p>
+                  <p>
+                    <span className="text-slate-500">Account No.:</span> <strong className="font-mono text-slate-900">112761900000855</strong>
+                  </p>
+                  <p>
+                    <span className="text-slate-500">IFSC code:</span> <strong className="font-mono text-slate-900">YESB0001127</strong>
+                  </p>
+                  <p>
+                    <span className="text-slate-500">Account holder&apos;s name:</span>{' '}
+                    <strong className="text-slate-900">{adminSettings?.companyName || 'AP SECURITY SYSTEM'}</strong>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Block 2: Terms and Conditions in One Line */}
+            <div className="border-b sm:border-b-0 sm:border-r print:border-b-0 print:border-r border-slate-400">
+              <div className="bg-[#b9cde5] text-slate-900 font-bold px-3 py-1 border-b border-slate-400">
+                Terms and Conditions
+              </div>
+              <div className="p-2.5 text-[10px] text-slate-700 leading-relaxed">
+                <p className="font-medium text-slate-900 mb-1">Thank you for doing business with us.</p>
+                <p>1. 1-Year on-site warranty on all cameras & equipment. • 2. Free mobile app configuration & testing included.</p>
+              </div>
+            </div>
+
+            {/* Block 3: Authorized Signatory */}
+            <div className="flex flex-col justify-between p-2.5 min-h-[110px] bg-white">
+              <p className="text-xs font-semibold text-slate-900 text-right">
+                For: <span className="font-bold uppercase">{adminSettings?.companyName || 'AP SECURITY SYSTEM'}</span>
+              </p>
+              <div className="my-1 flex justify-center">
+                <svg viewBox="0 0 120 40" className="w-24 h-9 text-slate-800 opacity-80">
+                  <path
+                    d="M10 28 Q 28 6, 48 24 T 88 14 Q 104 18, 114 30"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <path d="M34 14 Q 44 34, 58 10" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                </svg>
+              </div>
+              <p className="text-xs font-bold text-slate-900 text-center border-t border-slate-300 pt-1">
+                Authorized Signatory
+              </p>
             </div>
           </div>
         </div>
@@ -278,4 +436,5 @@ export const InvoicePreviewModal = ({ isOpen, onClose, invoice }) => {
 };
 
 export default InvoicePreviewModal;
+
 

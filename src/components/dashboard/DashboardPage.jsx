@@ -36,10 +36,10 @@ export const DashboardPage = () => {
     .filter((e) => e.siteVisit && (e.siteVisit.status === 'Scheduled' || e.siteVisit.status === 'Rescheduled'))
     .slice(0, 4);
 
-  // Recent 5 enquiries
-  const recentEnquiries = enquiries.slice(0, 5);
+  // Recent 3 enquiries
+  const recentEnquiries = enquiries.slice(0, 3);
 
-  // Recent activity aggregated from workStatusHistory
+  // Recent activity aggregated from workStatusHistory (show top 3)
   const recentActivity = enquiries
     .flatMap((e) =>
       (e.workStatusHistory || []).map((h) => ({
@@ -49,7 +49,7 @@ export const DashboardPage = () => {
       }))
     )
     .sort((a, b) => (b.timestamp > a.timestamp ? 1 : -1))
-    .slice(0, 6);
+    .slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -120,12 +120,12 @@ export const DashboardPage = () => {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+              <thead className="bg-slate-50 text-slate-800 font-bold border-b border-slate-200">
                 <tr>
-                  <th className="py-2.5 px-4">ID</th>
-                  <th className="py-2.5 px-4">Customer</th>
-                  <th className="py-2.5 px-3">Requirement</th>
-                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-4 font-bold text-slate-800">ID</th>
+                  <th className="py-2.5 px-4 font-bold text-slate-800">Customer</th>
+                  <th className="py-2.5 px-3 font-bold text-slate-800">Requirement</th>
+                  <th className="py-2.5 px-3 font-bold text-slate-800">Status</th>
                   <th className="py-2.5 px-4 w-10 text-right"></th>
                 </tr>
               </thead>

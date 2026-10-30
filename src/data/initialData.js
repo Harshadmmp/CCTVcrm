@@ -9,7 +9,6 @@ export const initialTechnicians = [
     specialization: 'CCTV Installation',
     address: 'Sector 14, Gurugram, Haryana',
     status: 'Active',
-    experienceYears: 6,
     activeJobsCount: 0,
   },
   {
@@ -20,7 +19,6 @@ export const initialTechnicians = [
     specialization: 'DVR / NVR Setup',
     address: 'Lajpat Nagar IV, New Delhi',
     status: 'Active',
-    experienceYears: 4,
     activeJobsCount: 0,
   },
   {
@@ -31,7 +29,6 @@ export const initialTechnicians = [
     specialization: 'Networking',
     address: 'Noida Sector 62, Uttar Pradesh',
     status: 'Active',
-    experienceYears: 5,
     activeJobsCount: 0,
   },
   {
@@ -42,7 +39,6 @@ export const initialTechnicians = [
     specialization: 'CCTV Installation',
     address: 'Dwarka Sector 21, New Delhi',
     status: 'Active',
-    experienceYears: 7,
     activeJobsCount: 0,
   },
   {
@@ -53,7 +49,6 @@ export const initialTechnicians = [
     specialization: 'Maintenance',
     address: 'Rohini Sector 15, New Delhi',
     status: 'Active',
-    experienceYears: 3,
     activeJobsCount: 0,
   },
 ];

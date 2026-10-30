@@ -1,17 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import { Eye, Receipt, FileText } from 'lucide-react';
+import { Eye, Receipt, FileText, Share2 } from 'lucide-react';
 import Modal from '../common/Modal';
 import { useApp } from '../../context/AppContext';
-import { formatINR } from '../../utils/formatters';
+import { formatINR, formatDate } from '../../utils/formatters';
 
 export const InvoiceModal = ({ isOpen, onClose, order, onOpenPreview }) => {
-  const { createInvoice } = useApp();
+  const { createInvoice, products = [], adminSettings, enquiries = [], quotations = [] } = useApp();
 
   const [invoiceDate, setInvoiceDate] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [items, setItems] = useState([]);
   const [notes, setNotes] = useState(
     'Tax invoice for supply and installation of CCTV surveillance system as per approved specifications. Payment due within 15 days.'
   );
+
+  const matchingEnquiry = (enquiries || []).find(
+    (e) => (order?.enquiryId && e.id === order.enquiryId) || (order?.id && e.orderId === order.id)
+  );
+
+  const matchingQuotation = (quotations || []).find(
+    (q) =>
+      (order?.quotationId && q.id === order.quotationId) ||
+      (order?.enquiryId && q.enquiryId === order.enquiryId) ||
+      (matchingEnquiry?.quotationId && q.id === matchingEnquiry.quotationId)
+  );
+
+  const getEffectiveHsn = (it) => {
+    if (it?.hsnSac && it.hsnSac !== '-' && it.hsnSac !== '—') return String(it.hsnSac);
+    const match = products.find(
+      (p) => p.id === it?.productId || p.name?.toLowerCase().trim() === it?.name?.toLowerCase().trim()
+    );
+    if (match?.hsnSac) return String(match.hsnSac);
+    const cat = it?.category || match?.category;
+    if (cat === 'Installation & Services') return '995469';
+    if (cat === 'Cameras') return '85258900';
+    if (cat === 'DVR / NVR') return '85219090';
+    if (cat === 'Storage & Cables') return '84717020';
+    if (cat === 'Power & Accessories') return '85044090';
+    return '85258900';
+  };
 
   useEffect(() => {
     if (order && isOpen) {
@@ -21,26 +48,65 @@ export const InvoiceModal = ({ isOpen, onClose, order, onOpenPreview }) => {
 
       setInvoiceDate(today.toISOString().split('T')[0]);
       setDueDate(due.toISOString().split('T')[0]);
+
+      // Always sync with matching approved quotation items if available
+      const sourceItems =
+        matchingQuotation?.items && matchingQuotation.items.length > 0
+          ? matchingQuotation.items
+          : order.items || [];
+
+      setItems(
+        sourceItems.map((it) => ({
+          ...it,
+          hsnSac: getEffectiveHsn(it),
+        }))
+      );
     }
-  }, [order, isOpen]);
+  }, [order, isOpen, products, matchingQuotation]);
 
   if (!order) return null;
 
-  const subtotal = order.items?.reduce((sum, it) => sum + (Number(it.lineTotal) || 0), 0) || order.grandTotal;
-  const grandTotal = order.grandTotal;
+  const effectiveGrandTotal = matchingQuotation?.grandTotal || order.grandTotal;
+  const itemsSum = (items.length > 0 ? items : (matchingQuotation?.items || order.items || [])).reduce(
+    (sum, it) => sum + (Number(it.lineTotal) || (Number(it.quantity) * Number(it.unitPrice)) || 0),
+    0
+  );
+  const discount = Number(matchingQuotation?.discount) || Math.max(0, itemsSum - effectiveGrandTotal);
+  const subtotal = matchingQuotation?.subtotal || (discount > 0 ? itemsSum : effectiveGrandTotal);
+  const grandTotal = effectiveGrandTotal;
+
+  const handleItemHsnChange = (index, newHsn) => {
+    setItems((prev) =>
+      prev.map((it, idx) => (idx === index ? { ...it, hsnSac: newHsn } : it))
+    );
+  };
+
+  const effectiveCustomerName =
+    (matchingEnquiry?.customerName && order.customerName === 'Green Valley Residential Society')
+      ? matchingEnquiry.customerName
+      : order.customerName || matchingEnquiry?.customerName || 'Customer';
+  const effectiveCustomerPhone =
+    (matchingEnquiry?.phone && order.customerName === 'Green Valley Residential Society')
+      ? matchingEnquiry.phone
+      : order.customerPhone || matchingEnquiry?.phone || '';
+  const effectiveSiteAddress =
+    (matchingEnquiry?.siteAddress && order.customerName === 'Green Valley Residential Society')
+      ? matchingEnquiry.siteAddress
+      : order.siteAddress || matchingEnquiry?.siteAddress || '';
 
   const handleSaveDraft = () => {
     const newInv = createInvoice({
       orderId: order.id,
       enquiryId: order.enquiryId,
-      quotationId: order.quotationId,
-      customerName: order.customerName,
-      customerPhone: order.customerPhone,
-      siteAddress: order.siteAddress,
+      quotationId: matchingQuotation?.id || order.quotationId,
+      customerName: effectiveCustomerName,
+      customerPhone: effectiveCustomerPhone,
+      siteAddress: effectiveSiteAddress,
       invoiceDate,
       dueDate,
-      items: order.items,
+      items,
       subtotal,
+      discount,
       grandTotal,
       notes,
     });
@@ -48,18 +114,53 @@ export const InvoiceModal = ({ isOpen, onClose, order, onOpenPreview }) => {
     return newInv;
   };
 
+  const handleSaveAndSendWhatsApp = () => {
+    const newInv = createInvoice({
+      orderId: order.id,
+      enquiryId: order.enquiryId,
+      quotationId: matchingQuotation?.id || order.quotationId,
+      customerName: effectiveCustomerName,
+      customerPhone: effectiveCustomerPhone,
+      siteAddress: effectiveSiteAddress,
+      invoiceDate,
+      dueDate,
+      items,
+      subtotal,
+      discount,
+      grandTotal,
+      notes,
+    });
+
+    if (newInv) {
+      const rawPhone = effectiveCustomerPhone ? effectiveCustomerPhone.replace(/\D/g, '') : '';
+      const cleanPhone = rawPhone.length === 10 ? `91${rawPhone}` : rawPhone;
+      const formattedDateStr = formatDate ? formatDate(invoiceDate) : invoiceDate;
+      const formattedDueStr = formatDate ? formatDate(dueDate) : dueDate;
+      const formattedTotalStr = formatINR ? formatINR(grandTotal) : `₹${grandTotal}`;
+      const companyName = adminSettings?.companyName || 'AP SECURITY SYSTEM';
+
+      const message = `Hello ${effectiveCustomerName},\n\nYour CCTV Installation Tax Invoice has been generated.\n\n📄 *Invoice No:* ${newInv.id}\n📅 *Invoice Date:* ${formattedDateStr}\n⏳ *Due Date:* ${formattedDueStr}\n💰 *Total Amount:* ${formattedTotalStr} (Inclusive of GST)\n\nThank you for choosing ${companyName}!`;
+      const whatsappUrl = `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+    }
+
+    onClose();
+  };
+
   const handlePreview = () => {
     const draftInvoice = {
       id: 'INV-DRAFT',
       orderId: order.id,
       enquiryId: order.enquiryId,
-      customerName: order.customerName,
-      customerPhone: order.customerPhone,
-      siteAddress: order.siteAddress,
+      quotationId: matchingQuotation?.id || order.quotationId,
+      customerName: effectiveCustomerName,
+      customerPhone: effectiveCustomerPhone,
+      siteAddress: effectiveSiteAddress,
       invoiceDate,
       dueDate,
-      items: order.items,
+      items,
       subtotal,
+      discount,
       grandTotal,
       notes,
       status: 'Draft',
@@ -95,10 +196,19 @@ export const InvoiceModal = ({ isOpen, onClose, order, onOpenPreview }) => {
           <button
             type="button"
             onClick={handleSaveDraft}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors cursor-pointer"
           >
             <Receipt className="w-4 h-4" />
             Save Invoice Draft
+          </button>
+          <button
+            type="button"
+            onClick={handleSaveAndSendWhatsApp}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors cursor-pointer"
+            title="Save invoice and open WhatsApp with invoice summary"
+          >
+            <Share2 className="w-4 h-4" />
+            Save & Send WhatsApp
           </button>
         </>
       }
@@ -165,11 +275,18 @@ export const InvoiceModal = ({ isOpen, onClose, order, onOpenPreview }) => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {order.items?.map((it, idx) => (
+                {(items.length > 0 ? items : (order.items || [])).map((it, idx) => (
                   <tr key={it.id || idx}>
                     <td className="py-2 px-3 font-medium text-slate-800">{it.name}</td>
-                    <td className="py-2 px-2 font-mono text-[11px] text-slate-600 font-medium">
-                      {it.hsnSac || '—'}
+                    <td className="py-2 px-2">
+                      <input
+                        type="text"
+                        value={it.hsnSac || ''}
+                        onChange={(e) => handleItemHsnChange(idx, e.target.value)}
+                        className="w-28 px-2 py-1 text-xs font-mono font-medium text-slate-800 bg-white border border-slate-300 rounded hover:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                        placeholder="HSN/SAC"
+                        title="HSN / SAC Code (auto-filled from product, editable)"
+                      />
                     </td>
                     <td className="py-2 px-2 text-center text-[11px] font-semibold text-slate-700">
                       {it.gstRate ?? 18}%
@@ -199,13 +316,9 @@ export const InvoiceModal = ({ isOpen, onClose, order, onOpenPreview }) => {
           </div>
 
           <div className="w-full sm:w-64 bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-2">
-            <div className="flex justify-between text-slate-600">
-              <span>Subtotal:</span>
-              <span className="font-semibold text-slate-900">{formatINR(subtotal)}</span>
-            </div>
-            <div className="pt-2 border-t border-slate-300 flex justify-between items-baseline">
+            <div className="flex justify-between items-baseline">
               <div>
-                <span className="text-xs font-bold text-slate-900">Grand Total:</span>
+                <span className="text-xs font-bold text-slate-900">Total Amount:</span>
                 <p className="text-[10px] text-slate-500">(All applicable taxes included)</p>
               </div>
               <span className="text-base font-bold text-blue-600">{formatINR(grandTotal)}</span>

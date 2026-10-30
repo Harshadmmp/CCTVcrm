@@ -34,25 +34,117 @@
   scrollbar-width: none;
 }
 
-/* Print styles for quotations and invoices */
+/* Print styles for reports, quotations, and invoices */
 @media print {
-  body * {
-    visibility: hidden;
+  @page {
+    size: A4 portrait;
+    margin: 8mm 8mm;
   }
-  .printable-document, .printable-document * {
-    visibility: visible;
+
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    box-sizing: border-box;
   }
-  .printable-document {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    margin: 0;
-    padding: 20px;
-    background: white;
+
+  html,
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-height: 100% !important;
+    height: auto !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    overflow: visible !important;
   }
-  .no-print {
+
+  /* Completely hide app navigation chrome, sidebar, topbar, buttons, toasts in print */
+  aside,
+  header,
+  nav,
+  button,
+  .no-print,
+  .print\:hidden {
     display: none !important;
+  }
+
+  /* Reset layout wrappers to full width white background without sidebar margin */
+  .min-h-screen,
+  div[class*="pl-"],
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    background: #ffffff !important;
+  }
+
+  /* Ensure overflow containers and tables flow naturally on Page 1 without jumping */
+  .overflow-hidden,
+  .overflow-x-auto,
+  .overflow-y-auto {
+    overflow: visible !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  /* Only individual rows should avoid breaking midway across a page */
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* When printing an open modal document (Invoice / Estimate) via Ctrl+P */
+  body:has(.printable-document) main {
+    display: none !important;
+  }
+
+  body:has(.printable-document) [role="dialog"] {
+    position: static !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .printable-document {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 12px 14px !important;
+    background: #ffffff !important;
+    border: 1px solid #94a3b8 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  .printable-document table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  .printable-document tr {
+    page-break-inside: avoid !important;
   }
 }
 

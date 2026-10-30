@@ -15,6 +15,7 @@ import StatusBadge from '../common/StatusBadge';
 import EmptyState from '../common/EmptyState';
 import ProductModal from './ProductModal';
 import Modal from '../common/Modal';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 export const ProductsPage = () => {
   const {
@@ -29,6 +30,7 @@ export const ProductsPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState(null);
   const [viewProduct, setViewProduct] = useState(null);
+  const [productToDelete, setProductToDelete] = useState(null);
 
   const filteredProducts = useMemo(() => {
     return products.filter((item) => {
@@ -86,15 +88,15 @@ export const ProductsPage = () => {
             />
           ) : (
             <table className="w-full text-left text-xs border-collapse">
-              <thead className="bg-slate-100/80 text-slate-600 font-semibold border-b border-slate-200">
+              <thead className="bg-slate-100/90 text-slate-800 font-bold border-b border-slate-200">
                 <tr>
-                  <th className="py-3 px-4 w-28">Item ID</th>
-                  <th className="py-3 px-4">Item Name</th>
-                  <th className="py-3 px-3 w-36">Category</th>
-                  <th className="py-3 px-3 w-28">HSN / SAC</th>
-                  <th className="py-3 px-3 w-20 text-center">GST %</th>
-                  <th className="py-3 px-3 text-right w-28">Unit Price</th>
-                  <th className="py-3 px-3 text-center w-24">Status</th>
+                  <th className="py-3 px-4 w-28 font-bold text-slate-800">Item ID</th>
+                  <th className="py-3 px-4 font-bold text-slate-800">Item Name</th>
+                  <th className="py-3 px-3 w-36 font-bold text-slate-800">Category</th>
+                  <th className="py-3 px-3 w-28 font-bold text-slate-800">HSN / SAC</th>
+                  <th className="py-3 px-3 w-20 text-center font-bold text-slate-800">GST %</th>
+                  <th className="py-3 px-3 text-right w-28 font-bold text-slate-800">Unit Price</th>
+                  <th className="py-3 px-3 text-center w-24 font-bold text-slate-800">Status</th>
                   <th className="py-3 px-4 w-10 text-right"></th>
                 </tr>
               </thead>
@@ -166,10 +168,8 @@ export const ProductsPage = () => {
               <button
                 type="button"
                 onClick={() => {
-                  if (window.confirm(`Are you sure you want to delete ${viewProduct.name}?`)) {
-                    deleteProduct(viewProduct.id);
-                    setViewProduct(null);
-                  }
+                  setProductToDelete(viewProduct);
+                  setViewProduct(null);
                 }}
                 className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors cursor-pointer"
               >
@@ -241,6 +241,23 @@ export const ProductsPage = () => {
           </div>
         </Modal>
       )}
+
+      {/* Beautiful Delete Product Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(productToDelete)}
+        onClose={() => setProductToDelete(null)}
+        onConfirm={() => {
+          if (productToDelete) {
+            deleteProduct(productToDelete.id);
+            setProductToDelete(null);
+          }
+        }}
+        title="Delete Product"
+        message={`Are you sure you want to delete "${productToDelete?.name}" (${productToDelete?.id})? This product will be permanently removed from your catalog.`}
+        confirmText="Delete Product"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

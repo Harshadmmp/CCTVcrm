@@ -7,6 +7,7 @@ import {
   initialTechnicians,
   initialProducts,
 } from '../data/initialData';
+import { dummyEnquiries } from '../data/dummyEnquiries';
 import { generateNextId } from '../utils/formatters';
 import {
   getCollectionData,
@@ -45,8 +46,8 @@ try {
 }
 
 export const AppProvider = ({ children }) => {
-  // Disconnected from localStorage; clean state directly synced with Cloud Firestore
-  const [enquiries, setEnquiries] = useState([]);
+  // Clean state initialized with temporary dummy enquiries + synced with Cloud Firestore
+  const [enquiries, setEnquiries] = useState(dummyEnquiries);
   const [quotations, setQuotations] = useState([]);
   const [orders, setOrders] = useState([]);
   const [invoices, setInvoices] = useState([]);
@@ -54,7 +55,11 @@ export const AppProvider = ({ children }) => {
   const [technicians, setTechnicians] = useState(() => {
     try {
       const saved = localStorage.getItem('cctv_technicians');
-      return saved ? JSON.parse(saved) : initialTechnicians;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed.map(({ experienceYears, ...t }) => t);
+      }
+      return initialTechnicians;
     } catch (e) {
       console.error('Error reading technicians from localStorage', e);
       return initialTechnicians;
@@ -95,14 +100,18 @@ export const AppProvider = ({ children }) => {
   const defaultAdminSettings = {
     username: 'admin',
     name: 'Office Admin',
-    email: 'admin@securevision.in',
-    phone: '+91 98100 12345',
+    email: 'akpatil7788@gmail.com',
+    phone: '7410108728',
     password: 'admin123',
-    companyName: 'SecureVision CCTV Systems',
-    companyPhone: '+91 98100 12345',
-    companyEmail: 'contact@securevision.in',
-    companyAddress: 'Sector 18, Commercial Plaza, Gurugram 122001',
-    gstin: '06AAAAA0000A1Z5',
+    companyName: 'AP SECURITY SYSTEM',
+    companyPhone: '7410108728',
+    companyEmail: 'akpatil7788@gmail.com',
+    companyAddress: 'Co/off:- C.S. No 8265/4 KORE CLASSIC FRONT JAI HIND COLONY FRONT OF DR SAKEKAR VISHRAMBAG, SANGLI 416415',
+    gstin: '27EUDPP0562H1ZJ',
+    bankName: 'YES BANK, VISHRAM BAUG, SANGLI',
+    accountNumber: '112761900000855',
+    ifscCode: 'YESB0001127',
+    accountHolder: 'AP SECURITY SYSTEM',
     defaultGstRate: 18,
     quotationValidityDays: 30,
     quotationTerms: '1. Prices are all-inclusive of applicable GST.\n2. 50% advance along with work order, remaining 50% upon installation sign-off.\n3. 1-Year on-site warranty on all cameras and recording equipment.\n4. Free mobile view app configuration and staff training included.',
@@ -112,7 +121,23 @@ export const AppProvider = ({ children }) => {
     try {
       const saved = localStorage.getItem('cctv_admin_settings');
       if (saved) {
-        return { ...defaultAdminSettings, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        if (parsed.companyName === 'SecureVision CCTV Systems' || !parsed.companyName) {
+          return {
+            ...defaultAdminSettings,
+            ...parsed,
+            companyName: 'AP SECURITY SYSTEM',
+            companyPhone: '7410108728',
+            companyEmail: 'akpatil7788@gmail.com',
+            companyAddress: 'Co/off:- C.S. No 8265/4 KORE CLASSIC FRONT JAI HIND COLONY FRONT OF DR SAKEKAR VISHRAMBAG, SANGLI 416415',
+            gstin: '27EUDPP0562H1ZJ',
+            bankName: 'YES BANK, VISHRAM BAUG, SANGLI',
+            accountNumber: '112761900000855',
+            ifscCode: 'YESB0001127',
+            accountHolder: 'AP SECURITY SYSTEM',
+          };
+        }
+        return { ...defaultAdminSettings, ...parsed };
       }
       return defaultAdminSettings;
     } catch (e) {
@@ -262,7 +287,11 @@ export const AppProvider = ({ children }) => {
         if (!isMounted) return;
 
         if (cloudEnquiries && cloudEnquiries.length > 0) {
-          setEnquiries(cloudEnquiries);
+          const existingIds = new Set(cloudEnquiries.map((e) => e.id));
+          const filteredDummy = dummyEnquiries.filter((d) => !existingIds.has(d.id));
+          setEnquiries([...cloudEnquiries, ...filteredDummy]);
+        } else {
+          setEnquiries(dummyEnquiries);
         }
 
         if (cloudQuotations && cloudQuotations.length > 0) {
@@ -270,15 +299,73 @@ export const AppProvider = ({ children }) => {
         }
 
         if (cloudOrders && cloudOrders.length > 0) {
-          setOrders(cloudOrders);
+          const reconciledOrders = cloudOrders.map((o) => {
+            const matchedEnq = (cloudEnquiries || []).find((e) => e.orderId === o.id || e.id === o.enquiryId);
+            const matchedQuote = (cloudQuotations || []).find(
+              (q) => q.id === o.quotationId || (matchedEnq && q.id === matchedEnq.quotationId) || (o.enquiryId && q.enquiryId === o.enquiryId)
+            );
+
+            if (matchedQuote && (o.customerName === 'Green Valley Residential Society' || o.grandTotal !== matchedQuote.grandTotal)) {
+              return {
+                ...o,
+                customerName: matchedQuote.customerName || matchedEnq?.customerName || o.customerName,
+                customerPhone: matchedQuote.customerPhone || matchedEnq?.phone || o.customerPhone,
+                siteAddress: matchedQuote.siteAddress || matchedEnq?.siteAddress || o.siteAddress,
+                items: (matchedQuote.items && matchedQuote.items.length > 0) ? matchedQuote.items : o.items,
+                grandTotal: matchedQuote.grandTotal,
+                subtotal: matchedQuote.subtotal || matchedQuote.grandTotal,
+                discount: matchedQuote.discount || 0,
+              };
+            }
+            if (matchedEnq && matchedEnq.customerName && o.customerName === 'Green Valley Residential Society') {
+              return {
+                ...o,
+                customerName: matchedEnq.customerName,
+                customerPhone: matchedEnq.phone || o.customerPhone,
+                siteAddress: matchedEnq.siteAddress || o.siteAddress,
+              };
+            }
+            return o;
+          });
+          setOrders(reconciledOrders);
         }
 
         if (cloudInvoices && cloudInvoices.length > 0) {
-          setInvoices(cloudInvoices);
+          const reconciledInvoices = cloudInvoices.map((inv) => {
+            const matchedEnq = (cloudEnquiries || []).find(
+              (e) => (inv.enquiryId && e.id === inv.enquiryId) || (inv.orderId && e.orderId === inv.orderId)
+            );
+            const matchedQuote = (cloudQuotations || []).find(
+              (q) => q.id === inv.quotationId || (matchedEnq && q.id === matchedEnq.quotationId) || (inv.enquiryId && q.enquiryId === inv.enquiryId)
+            );
+
+            if (matchedQuote && (inv.customerName === 'Green Valley Residential Society' || inv.grandTotal !== matchedQuote.grandTotal)) {
+              return {
+                ...inv,
+                customerName: matchedQuote.customerName || matchedEnq?.customerName || inv.customerName,
+                customerPhone: matchedQuote.customerPhone || matchedEnq?.phone || inv.customerPhone,
+                siteAddress: matchedQuote.siteAddress || matchedEnq?.siteAddress || inv.siteAddress,
+                items: (matchedQuote.items && matchedQuote.items.length > 0) ? matchedQuote.items : inv.items,
+                grandTotal: matchedQuote.grandTotal,
+                subtotal: matchedQuote.subtotal || matchedQuote.grandTotal,
+                discount: matchedQuote.discount || 0,
+              };
+            }
+            if (matchedEnq && matchedEnq.customerName && inv.customerName === 'Green Valley Residential Society') {
+              return {
+                ...inv,
+                customerName: matchedEnq.customerName,
+                customerPhone: matchedEnq.phone || inv.customerPhone,
+                siteAddress: matchedEnq.siteAddress || inv.siteAddress,
+              };
+            }
+            return inv;
+          });
+          setInvoices(reconciledInvoices);
         }
 
         if (cloudTechnicians && cloudTechnicians.length > 0) {
-          setTechnicians(cloudTechnicians);
+          setTechnicians(cloudTechnicians.map(({ experienceYears, ...t }) => t));
         } else {
           syncCollectionToFirestore('technicians', technicians);
         }
@@ -591,15 +678,19 @@ export const AppProvider = ({ children }) => {
     if (updatedFields.siteAddress !== undefined) customerFields.siteAddress = updatedFields.siteAddress;
 
     if (Object.keys(customerFields).length > 0) {
+      const targetEnquiry = enquiries.find((e) => e.id === id);
+      const targetOrderId = targetEnquiry?.orderId;
+      const targetQuotationId = targetEnquiry?.quotationId;
+
       setQuotations((prev) =>
-        prev.map((q) => (q.enquiryId === id ? { ...q, ...customerFields } : q))
+        prev.map((q) => (q.enquiryId === id || (targetQuotationId && q.id === targetQuotationId) ? { ...q, ...customerFields } : q))
       );
       setOrders((prev) =>
-        prev.map((o) => (o.enquiryId === id ? { ...o, ...customerFields } : o))
+        prev.map((o) => (o.enquiryId === id || (targetOrderId && o.id === targetOrderId) ? { ...o, ...customerFields } : o))
       );
       setInvoices((prev) =>
         prev.map((i) =>
-          i.enquiryId === id
+          i.enquiryId === id || (targetOrderId && i.orderId === targetOrderId)
             ? {
                 ...i,
                 customerName: customerFields.customerName ?? i.customerName,
@@ -730,6 +821,22 @@ export const AppProvider = ({ children }) => {
       );
     }
 
+    // Keep associated order in sync if quotation was modified
+    setOrders((prev) =>
+      prev.map((o) => {
+        if (o.quotationId === quotationId || (targetEnquiryId && o.enquiryId === targetEnquiryId)) {
+          return {
+            ...o,
+            grandTotal: updatedFields.grandTotal !== undefined ? updatedFields.grandTotal : o.grandTotal,
+            subtotal: updatedFields.subtotal !== undefined ? updatedFields.subtotal : (updatedFields.grandTotal || o.subtotal),
+            discount: updatedFields.discount !== undefined ? updatedFields.discount : o.discount,
+            items: updatedFields.items !== undefined ? updatedFields.items : o.items,
+          };
+        }
+        return o;
+      })
+    );
+
     addToast('Quotation Updated', `Quotation ${quotationId} updated.`);
   };
 
@@ -824,6 +931,8 @@ export const AppProvider = ({ children }) => {
       siteAddress: quot.siteAddress,
       orderDate: new Date().toISOString().split('T')[0],
       grandTotal: quot.grandTotal,
+      subtotal: quot.subtotal || quot.grandTotal,
+      discount: quot.discount || 0,
       items: quot.items,
       assignedTechnicianId: null,
       assignedTechnicianName: '',
@@ -1040,8 +1149,38 @@ export const AppProvider = ({ children }) => {
     }
 
     const newId = generateNextId('INV', invoices);
+    const resolvedItems = (invoiceData.items || order.items || []).map((it) => {
+      let hsn = it.hsnSac;
+      if (!hsn || hsn === '-' || hsn === '—') {
+        const prod = products.find(
+          (p) => p.id === it.productId || p.name?.toLowerCase().trim() === it.name?.toLowerCase().trim()
+        );
+        hsn = prod?.hsnSac || (it.category === 'Installation & Services' ? '995469' : '85258900');
+      }
+      return {
+        ...it,
+        hsnSac: String(hsn),
+      };
+    });
+
+    const matchingEnquiry = enquiries.find(
+      (e) => (invoiceData.enquiryId && e.id === invoiceData.enquiryId) ||
+             (invoiceData.orderId && e.orderId === invoiceData.orderId)
+    );
+
+    const customerName =
+      invoiceData.customerName || matchingEnquiry?.customerName || order.customerName;
+    const customerPhone =
+      invoiceData.customerPhone || matchingEnquiry?.phone || order.customerPhone;
+    const siteAddress =
+      invoiceData.siteAddress || matchingEnquiry?.siteAddress || order.siteAddress;
+
     const newInvoice = {
       ...invoiceData,
+      customerName,
+      customerPhone,
+      siteAddress,
+      items: resolvedItems,
       id: newId,
       status: 'Draft', // Draft, Reviewed, Sent
       reviewedAt: null,
@@ -1050,9 +1189,23 @@ export const AppProvider = ({ children }) => {
 
     setInvoices((prev) => [newInvoice, ...prev]);
 
-    // Link invoice to order
+    // Link invoice to order and synchronize latest billed details
     setOrders((prev) =>
-      prev.map((o) => (o.id === invoiceData.orderId ? { ...o, invoiceId: newId } : o))
+      prev.map((o) =>
+        o.id === invoiceData.orderId
+          ? {
+              ...o,
+              invoiceId: newId,
+              customerName,
+              customerPhone,
+              siteAddress,
+              items: resolvedItems,
+              grandTotal: invoiceData.grandTotal || o.grandTotal,
+              subtotal: invoiceData.subtotal || o.subtotal,
+              discount: invoiceData.discount || 0,
+            }
+          : o
+      )
     );
 
     // Update enquiry history
@@ -1166,7 +1319,6 @@ export const AppProvider = ({ children }) => {
     const newTech = {
       ...techData,
       id: newId,
-      experienceYears: techData.experienceYears || 1,
       activeJobsCount: 0,
     };
     setTechnicians((prev) => [newTech, ...prev]);
@@ -1217,9 +1369,7 @@ export const AppProvider = ({ children }) => {
       if (!sv) return false;
       const matchesTech =
         (sv.staffOrTechId && activeTechForPortal.id && sv.staffOrTechId.toLowerCase() === activeTechForPortal.id.toLowerCase()) ||
-        (sv.staffOrTechName && activeTechForPortal.name && sv.staffOrTechName.toLowerCase().trim() === activeTechForPortal.name.toLowerCase().trim()) ||
-        (e.technicianId && activeTechForPortal.id && e.technicianId.toLowerCase() === activeTechForPortal.id.toLowerCase()) ||
-        (e.technicianName && activeTechForPortal.name && e.technicianName.toLowerCase().trim() === activeTechForPortal.name.toLowerCase().trim());
+        (sv.staffOrTechName && activeTechForPortal.name && sv.staffOrTechName.toLowerCase().trim() === activeTechForPortal.name.toLowerCase().trim());
       return matchesTech;
     });
 

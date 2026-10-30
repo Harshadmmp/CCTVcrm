@@ -25,14 +25,14 @@ import {
   Legend,
 } from 'recharts';
 import { useApp } from '../../context/AppContext';
-import { formatINR, formatDate } from '../../utils/formatters';
+import { formatINR, formatDate, cleanPhoneForDisplay } from '../../utils/formatters';
 import SummaryCard from '../common/SummaryCard';
 import StatusBadge from '../common/StatusBadge';
 
 const CATEGORY_COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#06b6d4'];
 
 export const ReportsPage = () => {
-  const { enquiries, quotations, orders, invoices, technicians } = useApp();
+  const { enquiries, quotations, orders, invoices, technicians, adminSettings, currentUser } = useApp();
 
   // Filters
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -55,6 +55,15 @@ export const ReportsPage = () => {
     0
   );
   const completedJobsCount = orders.filter((o) => o.workStatus === 'Completed').length;
+
+  // Total valuation across enquiries / orders
+  const totalReportValue = useMemo(() => {
+    return enquiries.reduce((sum, enq) => {
+      const ord = orders.find((o) => o.id === enq.orderId);
+      const quot = quotations.find((q) => q.id === enq.quotationId);
+      return sum + (Number(ord?.grandTotal || quot?.grandTotal) || 0);
+    }, 0);
+  }, [enquiries, orders, quotations]);
 
   // Breakdown by service category (from order items)
   const categoryBreakdown = useMemo(() => {
@@ -159,9 +168,51 @@ export const ReportsPage = () => {
   }, [enquiries, orders, quotations]);
 
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div className="space-y-6 print:space-y-0 print:p-0">
+      {/* Official Print Header (Visible ONLY when printing) */}
+      <div className="hidden print:block mb-4 pb-3 border-b-2 border-slate-900">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-blue-900 text-white rounded-lg flex items-center justify-center font-bold text-base">
+              CCTV
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                {adminSettings?.companyName || 'AP SECURITY SYSTEM'}
+              </h1>
+              <p className="text-xs text-slate-600 max-w-lg mt-0.5">
+                {adminSettings?.companyAddress ||
+                  'Co/off:- C.S. No 8265/4 KORE CLASSIC FRONT JAI HIND COLONY FRONT OF DR SAKEKAR VISHRAMBAG, SANGLI 416415'}
+              </p>
+              <p className="text-xs text-slate-600 mt-1">
+                Phone: <span className="font-semibold text-slate-900">{adminSettings?.companyPhone || '7410108728'}</span> | Email:{' '}
+                <span className="font-semibold text-slate-900">{adminSettings?.companyEmail || 'akpatil7788@gmail.com'}</span>
+                {adminSettings?.gstin && (
+                  <span> | GSTIN: <span className="font-mono font-semibold">{adminSettings.gstin}</span></span>
+                )}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="inline-block px-3 py-1 text-xs font-bold bg-slate-100 text-slate-900 border border-slate-300 rounded uppercase">
+              Customer Enquiries & Workflow Orders Summary
+            </span>
+            <p className="text-xs text-slate-600 mt-2">
+              Generated:{' '}
+              <span className="font-semibold text-slate-900">
+                {new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+              </span>
+            </p>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Total Records: <strong className="text-slate-800">{enquiries.length}</strong> | Total Value:{' '}
+              <strong className="text-slate-900 font-mono">{formatINR(totalReportValue)}</strong>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Summary Cards (Hidden during Print) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 print:hidden">
         <SummaryCard
           title="Total Enquiries"
           value={totalEnquiriesCount}
@@ -192,10 +243,10 @@ export const ReportsPage = () => {
         />
       </div>
 
-      {/* Charts section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* Charts section (Hidden during Print) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 print:hidden">
         {/* Revenue Comparison Chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+        <div className="lg:col-span-2 print:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-xs print:shadow-none print:border-slate-300">
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900">
@@ -240,7 +291,7 @@ export const ReportsPage = () => {
         </div>
 
         {/* Category breakdown pie */}
-        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+        <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between print:shadow-none print:border-slate-300">
           <div>
             <h3 className="text-sm font-bold text-slate-900">
               Revenue by Product / Service Category
@@ -296,28 +347,27 @@ export const ReportsPage = () => {
         </div>
       </div>
 
-      {/* Technician Workload & Performance Table */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+      {/* Technician Workload & Performance Table (Hidden during Print) */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden print:hidden">
         <div className="p-4 border-b border-slate-200">
           <h3 className="text-sm font-bold text-slate-900">
             Technician Performance & Workload Matrix
           </h3>
           <p className="text-xs text-slate-500">
-            Allocated jobs, completed installations, and total order execution value
+            Allocated jobs and completed installations
           </p>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
-            <thead className="bg-slate-100/80 text-slate-600 font-semibold border-b border-slate-200">
+            <thead className="bg-slate-100/90 text-slate-800 font-bold border-b border-slate-200">
               <tr>
-                <th className="py-3 px-4">Technician</th>
-                <th className="py-3 px-3">Specialization</th>
-                <th className="py-3 px-3 text-center">Total Allocated</th>
-                <th className="py-3 px-3 text-center">In Progress</th>
-                <th className="py-3 px-3 text-center">Completed</th>
-                <th className="py-3 px-3 text-right">Job Execution Value</th>
-                <th className="py-3 px-4 text-center">Status</th>
+                <th className="py-3 px-4 font-bold text-slate-800">Technician</th>
+                <th className="py-3 px-3 font-bold text-slate-800">Specialization</th>
+                <th className="py-3 px-3 text-center font-bold text-slate-800">Total Allocated</th>
+                <th className="py-3 px-3 text-center font-bold text-slate-800">In Progress</th>
+                <th className="py-3 px-3 text-center font-bold text-slate-800">Completed</th>
+                <th className="py-3 px-4 text-center font-bold text-slate-800">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white">
@@ -345,9 +395,6 @@ export const ReportsPage = () => {
                       {tech.completedCount}
                     </span>
                   </td>
-                  <td className="py-3 px-3 text-right font-bold text-blue-600">
-                    {formatINR(tech.totalJobValue)}
-                  </td>
                   <td className="py-3 px-4 text-center">
                     <StatusBadge status={tech.status} size="xs" />
                   </td>
@@ -355,6 +402,92 @@ export const ReportsPage = () => {
               ))}
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* Customer Enquiries & Workflow Orders Summary Table (Printed Report Target) */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden print:shadow-none print:border print:border-slate-300 print:rounded-none print:overflow-visible">
+        <div className="p-4 border-b border-slate-200 flex items-center justify-between print:hidden">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">
+              Customer Enquiries & Workflow Orders Summary
+            </h3>
+            <p className="text-xs text-slate-500">
+              Complete customer pipeline status, technicians, and valuations ({enquiries.length} records)
+            </p>
+          </div>
+          <div className="text-right print:hidden">
+            <span className="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+              Total Value: <strong className="text-blue-900 font-bold">{formatINR(totalReportValue)}</strong>
+            </span>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto print:overflow-visible">
+          <table className="w-full text-left text-xs border-collapse print:text-[11px]">
+            <thead className="bg-slate-100/90 text-slate-800 font-bold border-b border-slate-200">
+              <tr>
+                <th className="py-2.5 px-3 w-10 text-center font-bold text-slate-800">#</th>
+                <th className="py-2.5 px-3 font-bold text-slate-800">Enquiry ID</th>
+                <th className="py-2.5 px-3 font-bold text-slate-800">Customer Name</th>
+                <th className="py-2.5 px-3 font-bold text-slate-800">Contact</th>
+                <th className="py-2.5 px-3 font-bold text-slate-800">Requirement</th>
+                <th className="py-2.5 px-3 font-bold text-slate-800">Order Ref</th>
+                <th className="py-2.5 px-3 font-bold text-slate-800">Technician</th>
+                <th className="py-2.5 px-3 text-right font-bold text-slate-800">Value (₹)</th>
+                <th className="py-2.5 px-3 font-bold text-slate-800">Date</th>
+                <th className="py-2.5 px-3 text-center font-bold text-slate-800">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 bg-white">
+              {enquiries.map((enq, index) => {
+                const ord = orders.find((o) => o.id === enq.orderId);
+                const quot = quotations.find((q) => q.id === enq.quotationId);
+                const val = ord?.grandTotal || quot?.grandTotal || 0;
+                return (
+                  <tr key={enq.id} className="hover:bg-slate-50/70 print:break-inside-avoid">
+                    <td className="py-2.5 px-3 text-center text-slate-400 font-mono">{index + 1}</td>
+                    <td className="py-2.5 px-3 font-mono font-medium text-slate-700">{enq.id}</td>
+                    <td className="py-2.5 px-3 font-semibold text-slate-900">{enq.customerName}</td>
+                    <td className="py-2.5 px-3 text-slate-600 font-medium">{cleanPhoneForDisplay(enq.phone)}</td>
+                    <td className="py-2.5 px-3 text-slate-600 truncate max-w-xs" title={enq.requirement}>
+                      {enq.requirement}
+                    </td>
+                    <td className="py-2.5 px-3 font-mono text-slate-600">{enq.orderId || '—'}</td>
+                    <td className="py-2.5 px-3 text-slate-600">{enq.technicianName || '—'}</td>
+                    <td className="py-2.5 px-3 text-right font-bold text-slate-900">
+                      {val ? formatINR(val) : '—'}
+                    </td>
+                    <td className="py-2.5 px-3 text-slate-600">{formatDate(enq.createdAt)}</td>
+                    <td className="py-2.5 px-3 text-center">
+                      <StatusBadge status={enq.workflowStatus} size="xs" />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot className="bg-slate-100 font-bold text-slate-900 border-t-2 border-slate-300">
+              <tr>
+                <td colSpan={7} className="py-2.5 px-3 text-left font-bold text-xs">
+                  Total Customer Records: {enquiries.length} Enquiries / Orders
+                </td>
+                <td className="py-2.5 px-3 text-right font-bold font-mono text-xs text-blue-900">
+                  {formatINR(totalReportValue)}
+                </td>
+                <td colSpan={2}></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      {/* Official Print Footer */}
+      <div className="hidden print:flex items-center justify-between pt-4 mt-6 border-t border-slate-300 text-[11px] text-slate-500 print:break-inside-avoid">
+        <span>AP Security System • Customer Enquiries & Workflow Orders Summary Report</span>
+        <span>Confidential • Official Business Record</span>
+        <div className="text-right">
+          <p className="border-b border-slate-400 w-44 mb-1"></p>
+          <span>Authorized Signature / Stamp</span>
         </div>
       </div>
     </div>

@@ -77,3 +77,43 @@ export const generateNextId = (prefix, existingItems) => {
   return `${prefix}-${year}-${nextNum}`;
 };
 
+export const numberToWords = (num) => {
+  if (num === 0) return 'Zero Rupees only';
+  if (!num || isNaN(num)) return '';
+
+  const a = [
+    '', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
+    'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'
+  ];
+  const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  const inWords = (n) => {
+    if (n < 20) return a[n];
+    const digit = n % 10;
+    return b[Math.floor(n / 10)] + (digit ? ' ' + a[digit] : '');
+  };
+
+  const integerPart = Math.floor(Math.abs(num));
+  let str = '';
+
+  const crore = Math.floor(integerPart / 10000000);
+  let rem = integerPart % 10000000;
+  const lakh = Math.floor(rem / 100000);
+  rem = rem % 100000;
+  const thousand = Math.floor(rem / 1000);
+  rem = rem % 1000;
+  const hundred = Math.floor(rem / 100);
+  const rest = rem % 100;
+
+  if (crore) str += inWords(crore) + ' Crore ';
+  if (lakh) str += inWords(lakh) + ' Lakh ';
+  if (thousand) str += inWords(thousand) + ' Thousand ';
+  if (hundred) str += inWords(hundred) + ' Hundred ';
+  if (rest) {
+    if (str !== '') str += 'and ';
+    str += inWords(rest) + ' ';
+  }
+
+  return (str.trim() || 'Zero') + ' Rupees only';
+};
+

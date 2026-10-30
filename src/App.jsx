@@ -11,6 +11,8 @@ import TechnicianTasksPage from './components/technician-portal/TechnicianTasksP
 import SettingsPage from './components/settings/SettingsPage';
 import LoginPage from './components/auth/LoginPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import PublicInvoiceView from './components/public/PublicInvoiceView';
+import PublicQuotationView from './components/public/PublicQuotationView';
 
 export function App() {
   return (
@@ -19,6 +21,10 @@ export function App() {
         <Routes>
           {/* Public Login Route */}
           <Route path="/login" element={<LoginPage />} />
+
+          {/* Public Customer Invoice & Quotation Direct View Routes */}
+          <Route path="/view-invoice/:id" element={<PublicInvoiceView />} />
+          <Route path="/view-quotation/:id" element={<PublicQuotationView />} />
 
           {/* Protected Routes */}
           <Route

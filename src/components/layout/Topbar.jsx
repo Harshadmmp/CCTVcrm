@@ -86,10 +86,10 @@ export const Topbar = ({ onOpenAddEnquiry }) => {
                 key={tab.id}
                 onClick={() => setActiveWorkflowTab(tab.id)}
                 style={{ fontSize: '0.85rem' }}
-                className={`inline-flex items-center gap-1.5 py-1.5 px-2.5 text-[0.85rem] font-semibold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 py-1.5 px-2.5 text-[0.85rem] font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
                   isSelected
                     ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
+                    : 'border-transparent text-slate-700 hover:text-slate-900'
                 }`}
               >
                 <span>{tab.label}</span>

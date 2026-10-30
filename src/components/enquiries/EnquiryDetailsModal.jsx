@@ -361,7 +361,22 @@ export const EnquiryDetailsModal = ({
           return (
             <button
               type="button"
-              onClick={() => onOpenCreateInvoice(order)}
+              onClick={() =>
+                onOpenCreateInvoice(
+                  order
+                    ? {
+                        ...order,
+                        customerName: enquiry.customerName || order.customerName,
+                        customerPhone: enquiry.phone || order.customerPhone,
+                        siteAddress: enquiry.siteAddress || order.siteAddress,
+                        quotationId: quotation?.id || order.quotationId,
+                        items: (quotation?.items && quotation.items.length > 0) ? quotation.items : order.items,
+                        grandTotal: quotation?.grandTotal || order.grandTotal,
+                        subtotal: quotation?.subtotal || quotation?.grandTotal || order.grandTotal,
+                      }
+                    : order
+                )
+              }
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500 whitespace-nowrap cursor-pointer"
             >
               <Receipt className="w-4 h-4" />
@@ -372,7 +387,14 @@ export const EnquiryDetailsModal = ({
           return (
             <button
               type="button"
-              onClick={() => onOpenPreviewInvoice(invoice)}
+              onClick={() =>
+                onOpenPreviewInvoice({
+                  ...invoice,
+                  customerName: enquiry.customerName || invoice.customerName,
+                  customerPhone: enquiry.phone || invoice.customerPhone,
+                  siteAddress: enquiry.siteAddress || invoice.siteAddress,
+                })
+              }
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-violet-600 hover:bg-violet-700 rounded-lg shadow-sm transition-all focus:outline-none focus:ring-2 focus:ring-violet-500 whitespace-nowrap"
             >
               <Receipt className="w-4 h-4" />
@@ -383,7 +405,14 @@ export const EnquiryDetailsModal = ({
           return (
             <button
               type="button"
-              onClick={() => onOpenPreviewInvoice(invoice)}
+              onClick={() =>
+                onOpenPreviewInvoice({
+                  ...invoice,
+                  customerName: enquiry.customerName || invoice.customerName,
+                  customerPhone: enquiry.phone || invoice.customerPhone,
+                  siteAddress: enquiry.siteAddress || invoice.siteAddress,
+                })
+              }
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg shadow-2xs transition-all whitespace-nowrap"
             >
               <Receipt className="w-4 h-4" />
